@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Threading;
 
 namespace SqlReplicator
 {
@@ -18,19 +19,24 @@ namespace SqlReplicator
     {
         private int currentStep = 1;
         private readonly Dictionary<string, string> connectionStrings = new Dictionary<string, string>();
+        private CancellationTokenSource _refreshCancellation;
 
         public MainWindow()
         {
             InitializeComponent();
-            StartRefreshAnimation();
             RefreshServersButton.IsEnabled = false;
-            _ = LoadSqlServerInstances();
+            StartRefreshAnimation();
+            StatusLabel.Text = "Please wait while loading SQL Server instances...";
+            LoadSqlServerInstances();
         }
 
         private async Task LoadSqlServerInstances()
         {
             try
             {
+                _refreshCancellation = new CancellationTokenSource();
+                DisableFormControls();
+
                 await Task.Run(() =>
                 {
                     var instances = new List<string>();
@@ -47,6 +53,9 @@ namespace SqlReplicator
                         var dataTable = SqlDataSourceEnumerator.Instance.GetDataSources();
                         foreach (DataRow row in dataTable.Rows)
                         {
+                            if (_refreshCancellation.Token.IsCancellationRequested)
+                                return;
+
                             var serverName = row["ServerName"].ToString();
                             var instanceName = row["InstanceName"].ToString();
 
@@ -61,21 +70,28 @@ namespace SqlReplicator
                         // If enumeration fails, continue with basic instances
                     }
 
-                    Dispatcher.Invoke(() =>
+                    if (!_refreshCancellation.Token.IsCancellationRequested)
                     {
-                        var distinctInstances = instances.Distinct().ToList();
-                        BaseServerCombo.ItemsSource = distinctInstances;
-                        SourceServerCombo.ItemsSource = distinctInstances;
-                        TargetServerCombo.ItemsSource = distinctInstances;
-
-                        if (distinctInstances.Any())
+                        Dispatcher.Invoke(() =>
                         {
-                            BaseServerCombo.SelectedIndex = 0;
-                            SourceServerCombo.SelectedIndex = 0;
-                            TargetServerCombo.SelectedIndex = 0;
-                        }
-                    });
-                });
+                            var distinctInstances = instances.Distinct().ToList();
+                            BaseServerCombo.ItemsSource = distinctInstances;
+                            SourceServerCombo.ItemsSource = distinctInstances;
+                            TargetServerCombo.ItemsSource = distinctInstances;
+
+                            if (distinctInstances.Any())
+                            {
+                                BaseServerCombo.SelectedIndex = 0;
+                                SourceServerCombo.SelectedIndex = 0;
+                                TargetServerCombo.SelectedIndex = 0;
+                            }
+                        });
+                    }
+                }, _refreshCancellation.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                StatusLabel.Text = "Refresh operation cancelled";
             }
             catch (Exception ex)
             {
@@ -87,9 +103,64 @@ namespace SqlReplicator
                 {
                     StopRefreshAnimation();
                     RefreshServersButton.IsEnabled = true;
-                    StatusLabel.Text = "SQL Server instances refreshed";
+                    EnableFormControls();
+                    if (!_refreshCancellation.Token.IsCancellationRequested)
+                    {
+                        StatusLabel.Text = "SQL Server instances loaded successfully. Please configure your connection settings.";
+                    }
                 });
             }
+        }
+
+        private void DisableFormControls()
+        {
+            BaseServerCombo.IsEnabled = false;
+            BaseUsernameBox.IsEnabled = false;
+            BasePasswordBox.IsEnabled = false;
+            BaseDatabaseCombo.IsEnabled = false;
+            BaseTestButton.IsEnabled = false;
+            BaseNextButton.IsEnabled = false;
+
+            SourceServerCombo.IsEnabled = false;
+            SourceUsernameBox.IsEnabled = false;
+            SourcePasswordBox.IsEnabled = false;
+            SourceDatabaseCombo.IsEnabled = false;
+            SourceTestButton.IsEnabled = false;
+            SourceNextButton.IsEnabled = false;
+
+            TargetServerCombo.IsEnabled = false;
+            TargetUsernameBox.IsEnabled = false;
+            TargetPasswordBox.IsEnabled = false;
+            TargetDatabaseCombo.IsEnabled = false;
+            TargetTestButton.IsEnabled = false;
+            TargetCompleteButton.IsEnabled = false;
+        }
+
+        private void EnableFormControls()
+        {
+            BaseServerCombo.IsEnabled = true;
+            BaseUsernameBox.IsEnabled = true;
+            BasePasswordBox.IsEnabled = true;
+            BaseDatabaseCombo.IsEnabled = true;
+            BaseTestButton.IsEnabled = true;
+            if (BaseStatusIcon.Visibility == Visibility.Visible)
+                BaseNextButton.IsEnabled = true;
+
+            SourceServerCombo.IsEnabled = true;
+            SourceUsernameBox.IsEnabled = true;
+            SourcePasswordBox.IsEnabled = true;
+            SourceDatabaseCombo.IsEnabled = true;
+            SourceTestButton.IsEnabled = true;
+            if (SourceStatusIcon.Visibility == Visibility.Visible)
+                SourceNextButton.IsEnabled = true;
+
+            TargetServerCombo.IsEnabled = true;
+            TargetUsernameBox.IsEnabled = true;
+            TargetPasswordBox.IsEnabled = true;
+            TargetDatabaseCombo.IsEnabled = true;
+            TargetTestButton.IsEnabled = true;
+            if (TargetStatusIcon.Visibility == Visibility.Visible)
+                TargetCompleteButton.IsEnabled = true;
         }
 
         private async void RefreshServers_Click(object sender, RoutedEventArgs e)
@@ -97,6 +168,13 @@ namespace SqlReplicator
             var button = sender as Button;
             if (button != null)
             {
+                if (_refreshCancellation != null && !_refreshCancellation.Token.IsCancellationRequested)
+                {
+                    // Cancel the refresh operation
+                    _refreshCancellation.Cancel();
+                    return;
+                }
+
                 button.IsEnabled = false;
                 StartRefreshAnimation();
             }
