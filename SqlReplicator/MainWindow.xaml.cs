@@ -269,6 +269,22 @@ namespace SqlReplicator
 
             // Here you can save the connection strings or proceed to next phase
             StatusLabel.Text = "Configuration completed successfully!";
+
+            var configWindow = new ConfigurationWindow(baseConnectionString, sourceConnectionString, targetConnectionString);
+            configWindow.Owner = this;
+            configWindow.ShowDialog();
+        }
+
+        private void GoToConfig_Click(object sender, RoutedEventArgs e)
+        {
+            // Fake connection strings for testing
+            string baseConnectionString = "Server=PRECIOUSMD\\MSSQLSERVER2022;Database=DSTORE;User Id=sa;Password=79278668;TrustServerCertificate=True;";
+            string sourceConnectionString = "Server=PRECIOUSMD\\MSSQLSERVER2022;Database=Hakim;User Id=sa;Password=79278668;TrustServerCertificate=True;";
+            string targetConnectionString = "Server=PRECIOUSMD\\MSSQLSERVER2022;Database=Hakim1403;User Id=sa;Password=79278668;TrustServerCertificate=True;";
+
+            var configWindow = new ConfigurationWindow(baseConnectionString, sourceConnectionString, targetConnectionString);
+            configWindow.Owner = this;
+            configWindow.ShowDialog();
         }
     }
 }
