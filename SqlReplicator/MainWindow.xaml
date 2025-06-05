@@ -4,7 +4,7 @@
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                  Title="SQL Replicator - Database Connection Setup" 
-                 Height="700" Width="900"
+                 Height="700" Width="690"
                  WindowStartupLocation="CenterScreen"
                  ResizeMode="CanMinimize">
 
@@ -15,18 +15,28 @@
             <RowDefinition Height="80"/>
         </Grid.RowDefinitions>
 
-        <!-- Header with Steps -->
+        <!-- Header with Steps and Refresh Button -->
         <Border Grid.Row="0" Background="White">
             <Border.Effect>
                 <DropShadowEffect Color="Gray" Direction="270" ShadowDepth="2" Opacity="0.2" BlurRadius="8"/>
             </Border.Effect>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Button x:Name="Step1Button" Content="1. Base Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False"/>
-                <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                <Button x:Name="Step2Button" Content="2. Source Database" Style="{StaticResource StepButtonStyle}"/>
-                <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                <Button x:Name="Step3Button" Content="3. Target Database" Style="{StaticResource StepButtonStyle}"/>
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button x:Name="RefreshButton" Content="Refresh" VerticalAlignment="Center" Margin="20,0,0,0" Click="RefreshServers_Click"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Button x:Name="Step1Button" Content="1. Base Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False"/>
+                    <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
+                    <Button x:Name="Step2Button" Content="2. Source Database" Style="{StaticResource StepButtonStyle}"/>
+                    <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
+                    <Button x:Name="Step3Button" Content="3. Target Database" Style="{StaticResource StepButtonStyle}"/>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <!-- Main Content Area -->
@@ -45,32 +55,44 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
+                            <!-- Label Column -->
                             <ColumnDefinition Width="*"/>
+                            <!-- Username Input Column -->
+                            <ColumnDefinition Width="Auto"/>
+                            <!-- Password Label Column -->
+                            <ColumnDefinition Width="*"/>
+                            <!-- Password Input Column -->
                             <ColumnDefinition Width="100"/>
+                            <!-- Test Button Column -->
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="50"/>
+                            <!-- Server Row -->
                             <RowDefinition Height="50"/>
+                            <!-- Username/Password/Test Row -->
                             <RowDefinition Height="50"/>
-                            <RowDefinition Height="50"/>
+                            <!-- Database Row -->
                             <RowDefinition Height="60"/>
+                            <!-- Navigation Row -->
                         </Grid.RowDefinitions>
 
+                        <!-- Server Row -->
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Server:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <ComboBox x:Name="BaseServerCombo" Grid.Row="0" Grid.Column="1" IsEditable="True" Margin="0,0,10,0"/>
-                        <Button x:Name="BaseRefreshButton" Grid.Row="0" Grid.Column="2" Content="Refresh" Click="RefreshServers_Click"/>
+                        <ComboBox x:Name="BaseServerCombo" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="4" IsEditable="True" Margin="0,5,0,5" VerticalContentAlignment="Center"/>
 
+                        <!-- Username, Password, Test Row -->
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Username:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <TextBox x:Name="BaseUsernameBox" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"/>
+                        <TextBox x:Name="BaseUsernameBox" Grid.Row="1" Grid.Column="1" Margin="0,5,5,5" VerticalContentAlignment="Center"/>
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="Password:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="5,0"/>
+                        <PasswordBox x:Name="BasePasswordBox" Grid.Row="1" Grid.Column="3" Margin="0,5,10,5" VerticalContentAlignment="Center"/>
+                        <Button x:Name="BaseTestButton" Grid.Row="1" Grid.Column="4" Content="Connect" Click="TestConnection_Click" Tag="Base" Margin="0,5,0,5"/>
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Password:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <PasswordBox x:Name="BasePasswordBox" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"/>
+                        <!-- Database Row -->
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Database:" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <ComboBox x:Name="BaseDatabaseCombo" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" IsEditable="True" Margin="0,5,0,5" VerticalContentAlignment="Center" DropDownClosed="BaseDatabaseCombo_DropDownClosed"/>
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Database:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <ComboBox x:Name="BaseDatabaseCombo" Grid.Row="3" Grid.Column="1" IsEditable="True" Margin="0,0,10,0" DropDownClosed="BaseDatabaseCombo_DropDownClosed"/>
-                        <Button x:Name="BaseTestButton" Grid.Row="3" Grid.Column="2" Content="Test" Click="TestConnection_Click" Tag="Base"/>
-
-                        <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <!-- Next/Status Row -->
+                        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <iconPacks:PackIconMaterial x:Name="BaseStatusIcon" Kind="CheckCircle" Foreground="Green" Width="20" Height="20" Visibility="Collapsed" Margin="0,0,10,0"/>
                             <Button x:Name="BaseNextButton" Content="Next Step" Background="#2196F3" Foreground="White" Padding="20,8" IsEnabled="False" Click="NextStep_Click"/>
                         </StackPanel>
@@ -92,32 +114,44 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
+                            <!-- Label Column -->
                             <ColumnDefinition Width="*"/>
+                            <!-- Username Input Column -->
+                            <ColumnDefinition Width="Auto"/>
+                            <!-- Password Label Column -->
+                            <ColumnDefinition Width="*"/>
+                            <!-- Password Input Column -->
                             <ColumnDefinition Width="100"/>
+                            <!-- Test Button Column -->
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="50"/>
+                            <!-- Server Row -->
                             <RowDefinition Height="50"/>
+                            <!-- Username/Password/Test Row -->
                             <RowDefinition Height="50"/>
-                            <RowDefinition Height="50"/>
+                            <!-- Database Row -->
                             <RowDefinition Height="60"/>
+                            <!-- Navigation Row -->
                         </Grid.RowDefinitions>
 
+                        <!-- Server Row -->
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Server:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <ComboBox x:Name="SourceServerCombo" Grid.Row="0" Grid.Column="1" IsEditable="True" Margin="0,0,10,0"/>
-                        <Button x:Name="SourceRefreshButton" Grid.Row="0" Grid.Column="2" Content="Refresh" Click="RefreshServers_Click"/>
+                        <ComboBox x:Name="SourceServerCombo" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="4" IsEditable="True" Margin="0,5,0,5" VerticalContentAlignment="Center"/>
 
+                        <!-- Username, Password, Test Row -->
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Username:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <TextBox x:Name="SourceUsernameBox" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"/>
+                        <TextBox x:Name="SourceUsernameBox" Grid.Row="1" Grid.Column="1" Margin="0,5,5,5" VerticalContentAlignment="Center"/>
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="Password:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="5,0"/>
+                        <PasswordBox x:Name="SourcePasswordBox" Grid.Row="1" Grid.Column="3" Margin="0,5,10,5" VerticalContentAlignment="Center"/>
+                        <Button x:Name="SourceTestButton" Grid.Row="1" Grid.Column="4" Content="Connect" Click="TestConnection_Click" Tag="Source" Margin="0,5,0,5"/>
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Password:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <PasswordBox x:Name="SourcePasswordBox" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"/>
+                        <!-- Database Row -->
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Database:" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <ComboBox x:Name="SourceDatabaseCombo" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" IsEditable="True" Margin="0,5,0,5" VerticalContentAlignment="Center"/>
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Database:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <ComboBox x:Name="SourceDatabaseCombo" Grid.Row="3" Grid.Column="1" IsEditable="True" Margin="0,0,10,0"/>
-                        <Button x:Name="SourceTestButton" Grid.Row="3" Grid.Column="2" Content="Test" Click="TestConnection_Click" Tag="Source"/>
-
-                        <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <!-- Previous/Next/Status Row -->
+                        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Button Content="Previous" Margin="0,0,10,0" Click="PreviousStep_Click"/>
                             <iconPacks:PackIconMaterial x:Name="SourceStatusIcon" Kind="CheckCircle" Foreground="Green" Width="20" Height="20" Visibility="Collapsed" Margin="0,0,10,0"/>
                             <Button x:Name="SourceNextButton" Content="Next Step" Background="#2196F3" Foreground="White" Padding="20,8" IsEnabled="False" Click="NextStep_Click"/>
@@ -140,32 +174,44 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
+                            <!-- Label Column -->
                             <ColumnDefinition Width="*"/>
+                            <!-- Username Input Column -->
+                            <ColumnDefinition Width="Auto"/>
+                            <!-- Password Label Column -->
+                            <ColumnDefinition Width="*"/>
+                            <!-- Password Input Column -->
                             <ColumnDefinition Width="100"/>
+                            <!-- Test Button Column -->
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="50"/>
+                            <!-- Server Row -->
                             <RowDefinition Height="50"/>
+                            <!-- Username/Password/Test Row -->
                             <RowDefinition Height="50"/>
-                            <RowDefinition Height="50"/>
+                            <!-- Database Row -->
                             <RowDefinition Height="60"/>
+                            <!-- Navigation Row -->
                         </Grid.RowDefinitions>
 
+                        <!-- Server Row -->
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Server:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <ComboBox x:Name="TargetServerCombo" Grid.Row="0" Grid.Column="1" IsEditable="True" Margin="0,0,10,0"/>
-                        <Button x:Name="TargetRefreshButton" Grid.Row="0" Grid.Column="2" Content="Refresh" Click="RefreshServers_Click"/>
+                        <ComboBox x:Name="TargetServerCombo" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="4" IsEditable="True" Margin="0,5,0,5" VerticalContentAlignment="Center"/>
 
+                        <!-- Username, Password, Test Row -->
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Username:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <TextBox x:Name="TargetUsernameBox" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"/>
+                        <TextBox x:Name="TargetUsernameBox" Grid.Row="1" Grid.Column="1" Margin="0,5,5,5" VerticalContentAlignment="Center"/>
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="Password:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="5,0"/>
+                        <PasswordBox x:Name="TargetPasswordBox" Grid.Row="1" Grid.Column="3" Margin="0,5,10,5" VerticalContentAlignment="Center"/>
+                        <Button x:Name="TargetTestButton" Grid.Row="1" Grid.Column="4" Content="Connect" Click="TestConnection_Click" Tag="Target" Margin="0,5,0,5"/>
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Password:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <PasswordBox x:Name="TargetPasswordBox" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"/>
+                        <!-- Database Row -->
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Database:" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <ComboBox x:Name="TargetDatabaseCombo" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" IsEditable="True" Margin="0,5,0,5" VerticalContentAlignment="Center"/>
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Database:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <ComboBox x:Name="TargetDatabaseCombo" Grid.Row="3" Grid.Column="1" IsEditable="True" Margin="0,0,10,0"/>
-                        <Button x:Name="TargetTestButton" Grid.Row="3" Grid.Column="2" Content="Test" Click="TestConnection_Click" Tag="Target"/>
-
-                        <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <!-- Previous/Complete/Status Row -->
+                        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Button Content="Previous" Margin="0,0,10,0" Click="PreviousStep_Click"/>
                             <iconPacks:PackIconMaterial x:Name="TargetStatusIcon" Kind="CheckCircle" Foreground="Green" Width="20" Height="20" Visibility="Collapsed" Margin="0,0,10,0"/>
                             <Button x:Name="TargetCompleteButton" Content="Complete Setup" Background="#4CAF50" Foreground="White" Padding="20,8" IsEnabled="False" Click="CompleteSetup_Click"/>

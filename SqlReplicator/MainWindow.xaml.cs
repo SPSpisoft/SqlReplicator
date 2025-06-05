@@ -133,8 +133,8 @@ namespace SqlReplicator
             }
 
             button.IsEnabled = false;
-            button.Content = "Testing...";
-            StatusLabel.Text = $"Testing {step.ToLower()} database connection...";
+            button.Content = "Connecting...";
+            StatusLabel.Text = $"Connecting to {step.ToLower()} database...";
 
             try
             {
@@ -193,7 +193,7 @@ namespace SqlReplicator
             finally
             {
                 button.IsEnabled = true;
-                button.Content = "Test";
+                button.Content = "Connect";
             }
         }
 
