@@ -22,12 +22,13 @@ namespace SqlReplicator
         public MainWindow()
         {
             InitializeComponent();
+            StartRefreshAnimation();
+            RefreshServersButton.IsEnabled = false;
             _ = LoadSqlServerInstances();
         }
 
         private async Task LoadSqlServerInstances()
         {
-            StatusLabel.Text = "Refreshing SQL Server instances...";
             try
             {
                 await Task.Run(() =>
@@ -80,7 +81,15 @@ namespace SqlReplicator
             {
                 StatusLabel.Text = $"Warning: Could not enumerate SQL Server instances: {ex.Message}";
             }
-            StatusLabel.Text = "SQL Server instances refreshed";
+            finally
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    StopRefreshAnimation();
+                    RefreshServersButton.IsEnabled = true;
+                    StatusLabel.Text = "SQL Server instances refreshed";
+                });
+            }
         }
 
         private async void RefreshServers_Click(object sender, RoutedEventArgs e)
@@ -94,13 +103,6 @@ namespace SqlReplicator
 
             StatusLabel.Text = "Refreshing SQL Server instances...";
             await LoadSqlServerInstances();
-            StatusLabel.Text = "SQL Server instances refreshed";
-
-            if (button != null)
-            {
-                button.IsEnabled = true;
-                StopRefreshAnimation();
-            }
         }
 
         private void StartRefreshAnimation()
