@@ -9,6 +9,27 @@
                  ResizeMode="CanMinimize">
 
     <Grid Background="#F5F5F5">
+        <Grid.Resources>
+            <Style x:Key="RefreshButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
+                <Setter Property="Width" Value="40"/>
+                <Setter Property="Height" Value="40"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="20">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="100"/>
             <RowDefinition Height="*"/>
@@ -27,7 +48,17 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Button x:Name="RefreshButton" Content="Refresh" VerticalAlignment="Center" Margin="20,0,0,0" Click="RefreshServers_Click"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,20,0">
+                    <Button x:Name="RefreshServersButton" Click="RefreshServers_Click" 
+                            Style="{StaticResource RefreshButtonStyle}" 
+                            ToolTip="Refresh SQL Server Instances">
+                        <iconPacks:PackIconMaterial x:Name="RefreshIcon" Kind="Sync" Width="20" Height="20">
+                            <iconPacks:PackIconMaterial.RenderTransform>
+                                <RotateTransform x:Name="RefreshIconRotation" Angle="0" CenterX="10" CenterY="10"/>
+                            </iconPacks:PackIconMaterial.RenderTransform>
+                        </iconPacks:PackIconMaterial>
+                    </Button>
+                </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <Button x:Name="Step1Button" Content="1. Base Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False"/>

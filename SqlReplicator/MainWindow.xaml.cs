@@ -9,6 +9,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace SqlReplicator
 {
@@ -83,9 +85,41 @@ namespace SqlReplicator
 
         private async void RefreshServers_Click(object sender, RoutedEventArgs e)
         {
+            var button = sender as Button;
+            if (button != null)
+            {
+                button.IsEnabled = false;
+                StartRefreshAnimation();
+            }
+
             StatusLabel.Text = "Refreshing SQL Server instances...";
             await LoadSqlServerInstances();
             StatusLabel.Text = "SQL Server instances refreshed";
+
+            if (button != null)
+            {
+                button.IsEnabled = true;
+                StopRefreshAnimation();
+            }
+        }
+
+        private void StartRefreshAnimation()
+        {
+            var animation = new DoubleAnimation
+            {
+                From = 0,
+                To = 360,
+                Duration = TimeSpan.FromSeconds(1),
+                RepeatBehavior = RepeatBehavior.Forever
+            };
+
+            RefreshIconRotation.BeginAnimation(RotateTransform.AngleProperty, animation);
+        }
+
+        private void StopRefreshAnimation()
+        {
+            RefreshIconRotation.BeginAnimation(RotateTransform.AngleProperty, null);
+            RefreshIconRotation.Angle = 0;
         }
 
         private async void TestConnection_Click(object sender, RoutedEventArgs e)
