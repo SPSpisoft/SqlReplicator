@@ -67,7 +67,7 @@
                         <PasswordBox x:Name="BasePasswordBox" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"/>
 
                         <TextBlock Grid.Row="3" Grid.Column="0" Text="Database:" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <ComboBox x:Name="BaseDatabaseCombo" Grid.Row="3" Grid.Column="1" IsEditable="True" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="BaseDatabaseCombo" Grid.Row="3" Grid.Column="1" IsEditable="True" Margin="0,0,10,0" DropDownClosed="BaseDatabaseCombo_DropDownClosed"/>
                         <Button x:Name="BaseTestButton" Grid.Row="3" Grid.Column="2" Content="Test" Click="TestConnection_Click" Tag="Base"/>
 
                         <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -186,9 +186,14 @@
                     <iconPacks:PackIconMaterial Kind="Information" Foreground="#666" Width="16" Height="16" Margin="0,0,5,0"/>
                     <TextBlock x:Name="StatusLabel" Text="Please configure your base database connection" Foreground="#666"/>
                 </StackPanel>
-                <Button x:Name="GoToConfigButton" Grid.Column="1" Content="Go To Config" 
-                        Background="#2196F3" Foreground="White" Padding="15,5" Margin="10,0"
-                        Click="GoToConfig_Click"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="Collapsed" x:Name="ConfigButtonsPanel">
+                    <Button x:Name="DeleteConfigsButton" Content="Delete Configs" 
+                            Background="#F44336" Foreground="White" Padding="15,5" Margin="10,0"
+                            Click="DeleteConfigs_Click"/>
+                    <Button x:Name="GoToConfigButton" Content="Go To Config" 
+                            Background="#2196F3" Foreground="White" Padding="15,5" Margin="10,0"
+                            Click="GoToConfig_Click"/>
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>

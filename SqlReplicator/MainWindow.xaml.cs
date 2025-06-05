@@ -197,6 +197,62 @@ namespace SqlReplicator
             }
         }
 
+        private async void BaseDatabaseCombo_DropDownClosed(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(BaseDatabaseCombo.Text)) return;
+
+            try
+            {
+                StatusLabel.Text = "Checking for existing configurations...";
+                await CheckExistingConfigs();
+            }
+            catch (Exception ex)
+            {
+                StatusLabel.Text = $"Error checking configurations: {ex.Message}";
+            }
+        }
+
+        private async Task CheckExistingConfigs()
+        {
+            try
+            {
+                var baseConnectionString = connectionStrings["Base"];
+                if (string.IsNullOrEmpty(baseConnectionString) || string.IsNullOrEmpty(BaseDatabaseCombo.Text))
+                {
+                    ConfigButtonsPanel.Visibility = Visibility.Collapsed;
+                    StatusLabel.Text = "Please select a database.";
+                    return;
+                }
+
+                baseConnectionString += $"Database={BaseDatabaseCombo.Text};";
+
+                using (var connection = new SqlConnection(baseConnectionString))
+                {
+                    await connection.OpenAsync();
+                    using (var command = new SqlCommand("SELECT COUNT(*) FROM ReplicationConfigs", connection))
+                    {
+                        var configCount = Convert.ToInt32(await command.ExecuteScalarAsync());
+                        if (configCount > 0)
+                        {
+                            ConfigButtonsPanel.Visibility = Visibility.Visible;
+                            StatusLabel.Text = "Existing configuration found. You can view or delete it.";
+                        }
+                        else
+                        {
+                            ConfigButtonsPanel.Visibility = Visibility.Collapsed;
+                            StatusLabel.Text = "No existing configuration found. Please complete the setup.";
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // If table doesn't exist or any other error, hide the buttons
+                ConfigButtonsPanel.Visibility = Visibility.Collapsed;
+                StatusLabel.Text = "Please complete the setup.";
+            }
+        }
+
         private void NextStep_Click(object sender, RoutedEventArgs e)
         {
             if (currentStep < 3)
@@ -275,16 +331,125 @@ namespace SqlReplicator
             configWindow.ShowDialog();
         }
 
-        private void GoToConfig_Click(object sender, RoutedEventArgs e)
+        private async void GoToConfig_Click(object sender, RoutedEventArgs e)
         {
-            // Fake connection strings for testing
-            string baseConnectionString = "Server=PRECIOUSMD\\MSSQLSERVER2022;Database=DSTORE;User Id=sa;Password=79278668;TrustServerCertificate=True;";
-            string sourceConnectionString = "Server=PRECIOUSMD\\MSSQLSERVER2022;Database=Hakim;User Id=sa;Password=79278668;TrustServerCertificate=True;";
-            string targetConnectionString = "Server=PRECIOUSMD\\MSSQLSERVER2022;Database=Hakim1403;User Id=sa;Password=79278668;TrustServerCertificate=True;";
+            try
+            {
+                var baseConnectionString = connectionStrings["Base"];
+                if (string.IsNullOrEmpty(baseConnectionString))
+                {
+                    MessageBox.Show("Please configure base database connection first.", "Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
-            var configWindow = new ConfigurationWindow(baseConnectionString, sourceConnectionString, targetConnectionString);
-            configWindow.Owner = this;
-            configWindow.ShowDialog();
+                baseConnectionString += $"Database={BaseDatabaseCombo.Text};";
+
+                using (var connection = new SqlConnection(baseConnectionString))
+                {
+                    await connection.OpenAsync();
+                    using (var command = new SqlCommand(
+                        @"SELECT TOP 1 SourceConnectionString, TargetConnectionString 
+                          FROM ReplicationConfigs 
+                          ORDER BY Id DESC", connection))
+                    {
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                var sourceConnectionString = reader.GetString(0);
+                                var targetConnectionString = reader.GetString(1);
+
+                                var configWindow = new ConfigurationWindow(
+                                    baseConnectionString,
+                                    sourceConnectionString,
+                                    targetConnectionString);
+                                configWindow.ShowDialog();
+
+                                // Refresh config status after window is closed
+                                await CheckExistingConfigs();
+                            }
+                            else
+                            {
+                                MessageBox.Show("No existing configuration found.", "Error",
+                                    MessageBoxButton.OK, MessageBoxImage.Error);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void DeleteConfigs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = MessageBox.Show(
+                    "Are you sure you want to delete all existing configurations? This action cannot be undone.",
+                    "Confirm Delete",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    // Build connection string with selected database
+                    var baseConnectionString = connectionStrings["Base"];
+                    if (string.IsNullOrEmpty(baseConnectionString))
+                    {
+                        MessageBox.Show("Please configure base database connection first.", "Error",
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    baseConnectionString += $"Database={BaseDatabaseCombo.Text};";
+
+                    using (var connection = new SqlConnection(baseConnectionString))
+                    {
+                        await connection.OpenAsync();
+                        using (var transaction = connection.BeginTransaction())
+                        {
+                            try
+                            {
+                                // Delete from child tables first
+                                var deleteFieldMappings = new SqlCommand(
+                                    "DELETE FROM FieldMappings", connection, transaction);
+                                await deleteFieldMappings.ExecuteNonQueryAsync();
+
+                                var deleteTableSelections = new SqlCommand(
+                                    "DELETE FROM TableSelections", connection, transaction);
+                                await deleteTableSelections.ExecuteNonQueryAsync();
+
+                                // Delete from main config table
+                                var deleteConfigs = new SqlCommand(
+                                    "DELETE FROM ReplicationConfigs", connection, transaction);
+                                await deleteConfigs.ExecuteNonQueryAsync();
+
+                                transaction.Commit();
+                                MessageBox.Show("All configurations have been deleted successfully.", "Success",
+                                    MessageBoxButton.OK, MessageBoxImage.Information);
+
+                                // Hide config buttons after successful deletion
+                                ConfigButtonsPanel.Visibility = Visibility.Collapsed;
+                            }
+                            catch (Exception ex)
+                            {
+                                transaction.Rollback();
+                                throw new Exception($"Error deleting configurations: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }
