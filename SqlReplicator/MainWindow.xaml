@@ -54,7 +54,7 @@
 
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="80"/>
                             <!-- Label Column -->
                             <ColumnDefinition Width="*"/>
                             <!-- Username Input Column -->
