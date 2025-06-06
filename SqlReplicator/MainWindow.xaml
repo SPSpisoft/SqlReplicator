@@ -4,7 +4,7 @@
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                  Title="SQL Replicator - Database Connection Setup" 
-                 Height="700" Width="690"
+                 Height="700" Width="800"
                  WindowStartupLocation="CenterScreen"
                  ResizeMode="CanMinimize">
 
@@ -75,11 +75,13 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Button x:Name="Step1Button" Content="1. Base Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False"/>
+                    <Button x:Name="Step1Button" Content="1. Base Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="Step1Button_Click"/>
                     <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                    <Button x:Name="Step2Button" Content="2. Source Database" Style="{StaticResource StepButtonStyle}"/>
+                    <Button x:Name="Step2Button" Content="2. Source Database" Style="{StaticResource StepButtonStyle}" Click="Step2Button_Click"/>
                     <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                    <Button x:Name="Step3Button" Content="3. Target Database" Style="{StaticResource StepButtonStyle}"/>
+                    <Button x:Name="Step3Button" Content="3. Target Database" Style="{StaticResource StepButtonStyle}" Click="Step3Button_Click"/>
+                    <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
+                    <Button x:Name="ConfigStepButton" Content="4. Configuration" Style="{StaticResource StepButtonStyle}" Click="ConfigStepButton_Click"/>
                 </StackPanel>
             </Grid>
         </Border>

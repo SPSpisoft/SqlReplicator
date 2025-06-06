@@ -565,5 +565,45 @@ namespace SqlReplicator
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private void Step1Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (!Step1Button.IsEnabled) return;
+            ShowStep(1);
+        }
+
+        private void Step2Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (!Step2Button.IsEnabled) return;
+            ShowStep(2);
+        }
+
+        private void Step3Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (!Step3Button.IsEnabled) return;
+            ShowStep(3);
+        }
+
+        private void ConfigStepButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ConfigStepButton.IsEnabled) return;
+            GoToConfig_Click(sender, e);
+        }
+
+        private void ShowStep(int stepNumber)
+        {
+            Step1Panel.Visibility = stepNumber == 1 ? Visibility.Visible : Visibility.Collapsed;
+            Step2Panel.Visibility = stepNumber == 2 ? Visibility.Visible : Visibility.Collapsed;
+            Step3Panel.Visibility = stepNumber == 3 ? Visibility.Visible : Visibility.Collapsed;
+
+            Step1Button.IsEnabled = stepNumber != 1;
+            Step2Button.IsEnabled = stepNumber != 2;
+            Step3Button.IsEnabled = stepNumber != 3;
+        }
+
+        private void UpdateConfigButtonState()
+        {
+            ConfigStepButton.IsEnabled = ConfigButtonsPanel.Visibility == Visibility.Visible;
+        }
     }
 }
