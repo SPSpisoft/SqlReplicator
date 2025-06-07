@@ -27,77 +27,90 @@
         </Border>
 
         <!-- Main Content -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="20">
+        <Grid Grid.Row="1" Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-                <!-- Database Type Selection -->
-                <Border Style="{StaticResource DatabaseCardStyle}" Margin="0,0,0,20">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <iconPacks:PackIconMaterial Kind="DatabaseSettings" Width="24" Height="24" Foreground="#FF9800"/>
-                            <TextBlock Text="Database Structure Type" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="10,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-
-                        <TextBlock Text="Specify whether source and target databases have similar or different structures:" 
-                                   Foreground="#666" Margin="0,0,0,15" TextWrapping="Wrap"/>
-
-                        <StackPanel Orientation="Horizontal">
-                            <RadioButton x:Name="SimilarDatabasesRadio" Content="Similar Databases" 
-                                       IsChecked="True" Margin="0,0,30,0" FontWeight="SemiBold"
-                                       Checked="DatabaseTypeChanged"/>
-                            <RadioButton x:Name="DifferentDatabasesRadio" Content="Different Databases" 
-                                       FontWeight="SemiBold" Checked="DatabaseTypeChanged"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
-                            <Button x:Name="AnalyzeDatabasesButton" Content="Analyze Database Structures" 
-                                  Background="#2196F3" Foreground="White" Padding="15,8" 
-                                  Click="AnalyzeDatabases_Click"/>
-                            <TextBlock x:Name="AnalysisResultText" Margin="15,0,0,0" VerticalAlignment="Center" 
-                                     Foreground="#666" FontStyle="Italic"/>
-                        </StackPanel>
+            <!-- Database Type Selection -->
+            <Border Style="{StaticResource DatabaseCardStyle}" Margin="0,0,0,20">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                        <iconPacks:PackIconMaterial Kind="DatabaseSettings" Width="24" Height="24" Foreground="#FF9800"/>
+                        <TextBlock Text="Database Structure Type" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="10,0,0,0" VerticalAlignment="Center"/>
                     </StackPanel>
-                </Border>
 
-                <!-- Configuration Content -->
-                <Grid x:Name="ConfigurationContent">
+                    <TextBlock Text="Specify whether source and target databases have similar or different structures:" 
+                               Foreground="#666" Margin="0,0,0,15" TextWrapping="Wrap"/>
 
-                    <!-- Similar Databases Configuration -->
-                    <Border x:Name="SimilarDatabasesPanel" Style="{StaticResource DatabaseCardStyle}" Visibility="Visible">
-                        <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="SimilarDatabasesRadio" Content="Similar Databases" 
+                                   IsChecked="True" Margin="0,0,30,0" FontWeight="SemiBold"
+                                   Checked="DatabaseTypeChanged"/>
+                        <RadioButton x:Name="DifferentDatabasesRadio" Content="Different Databases" 
+                                   FontWeight="SemiBold" Checked="DatabaseTypeChanged"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
+                        <Button x:Name="AnalyzeDatabasesButton" Content="Analyze Database Structures" 
+                              Background="#2196F3" Foreground="White" Padding="15,8" 
+                              Click="AnalyzeDatabases_Click"/>
+                        <TextBlock x:Name="AnalysisResultText" Margin="15,0,0,0" VerticalAlignment="Center" 
+                                 Foreground="#666" FontStyle="Italic"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Configuration Content -->
+            <Grid x:Name="ConfigurationContent" Grid.Row="1">
+
+                <!-- Similar Databases Configuration -->
+                <Border x:Name="SimilarDatabasesPanel" Style="{StaticResource DatabaseCardStyle}" Visibility="Visible">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header -->
+                        <StackPanel Grid.Row="0" Margin="0,0,0,15">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                                 <iconPacks:PackIconMaterial Kind="TableLarge" Width="24" Height="24" Foreground="#4CAF50"/>
                                 <TextBlock Text="Table and Field Selection" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="10,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
 
                             <TextBlock Text="Select tables and fields to replicate from source to target database:" 
-                                     Foreground="#666" Margin="0,0,0,15" TextWrapping="Wrap"/>
+                                     Foreground="#666" TextWrapping="Wrap"/>
+                        </StackPanel>
 
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="300"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                        <!-- Content -->
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="300"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                                <!-- Tables List -->
-                                <Border Grid.Column="0" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5" Margin="0,0,10,0">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="40"/>
-                                            <RowDefinition Height="*"/>
-                                        </Grid.RowDefinitions>
+                            <!-- Tables List -->
+                            <Border Grid.Column="0" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5" Margin="0,0,10,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="40"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
 
-                                        <Border Grid.Row="0" Background="#F8F8F8" CornerRadius="5,5,0,0">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
-                                                <CheckBox x:Name="SelectAllTablesCheckBox" Content="Tables" 
-                                                        FontWeight="Bold" Checked="SelectAllTables_Checked" 
-                                                        Unchecked="SelectAllTables_Unchecked"/>
-                                                <Button Content="Refresh" Margin="10,0,0,0" Padding="8,4" 
-                                                      Click="RefreshTables_Click"/>
-                                            </StackPanel>
-                                        </Border>
+                                    <Border Grid.Row="0" Background="#F8F8F8" CornerRadius="5,5,0,0">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
+                                            <CheckBox x:Name="SelectAllTablesCheckBox" Content="Tables" 
+                                                    FontWeight="Bold" Checked="SelectAllTables_Checked" 
+                                                    Unchecked="SelectAllTables_Unchecked"/>
+                                            <Button Content="Refresh" Margin="10,0,0,0" Padding="8,4" 
+                                                  Click="RefreshTables_Click"/>
+                                        </StackPanel>
+                                    </Border>
 
-                                        <ListBox x:Name="TablesListBox" Grid.Row="1" SelectionChanged="TablesListBox_SelectionChanged">
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                        <ListBox x:Name="TablesListBox" SelectionChanged="TablesListBox_SelectionChanged">
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <StackPanel Orientation="Horizontal">
@@ -108,40 +121,42 @@
                                                 </DataTemplate>
                                             </ListBox.ItemTemplate>
                                         </ListBox>
-                                    </Grid>
-                                </Border>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
 
-                                <!-- Fields List -->
-                                <Border Grid.Column="1" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="40"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="*"/>
-                                        </Grid.RowDefinitions>
+                            <!-- Fields List -->
+                            <Border Grid.Column="1" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="40"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
 
-                                        <Border Grid.Row="0" Background="#F8F8F8" CornerRadius="5,5,0,0">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
-                                                <CheckBox x:Name="SelectAllFieldsCheckBox" Content="Fields" 
-                                                        FontWeight="Bold" Checked="SelectAllFields_Checked" 
-                                                        Unchecked="SelectAllFields_Unchecked"/>
-                                                <TextBlock x:Name="SelectedTableText" Text="(Select a table)" 
-                                                         Margin="10,0,0,0" Foreground="#999" FontStyle="Italic"/>
-                                            </StackPanel>
-                                        </Border>
+                                    <Border Grid.Row="0" Background="#F8F8F8" CornerRadius="5,5,0,0">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
+                                            <CheckBox x:Name="SelectAllFieldsCheckBox" Content="Fields" 
+                                                    FontWeight="Bold" Checked="SelectAllFields_Checked" 
+                                                    Unchecked="SelectAllFields_Unchecked"/>
+                                            <TextBlock x:Name="SelectedTableText" Text="(Select a table)" 
+                                                     Margin="10,0,0,0" Foreground="#999" FontStyle="Italic"/>
+                                        </StackPanel>
+                                    </Border>
 
-                                        <!-- Primary Key Selection -->
-                                        <Border Grid.Row="1" Background="#FFF3E0" Padding="10" Margin="0,0,0,10">
-                                            <StackPanel>
-                                                <TextBlock Text="Primary Key Selection" FontWeight="Bold" Margin="0,0,0,5"/>
-                                                <TextBlock x:Name="PrimaryKeyInfoText" Text="Select the primary key field for this table:" 
-                                                         Foreground="#666" TextWrapping="Wrap"/>
-                                                <ComboBox x:Name="PrimaryKeyComboBox" Margin="0,5,0,0" 
-                                                         SelectionChanged="PrimaryKeyComboBox_SelectionChanged"/>
-                                            </StackPanel>
-                                        </Border>
+                                    <!-- Primary Key Selection -->
+                                    <Border Grid.Row="1" Background="#FFF3E0" Padding="10" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <TextBlock Text="Primary Key Selection" FontWeight="Bold" Margin="0,0,0,5"/>
+                                            <TextBlock x:Name="PrimaryKeyInfoText" Text="Select the primary key field for this table:" 
+                                                     Foreground="#666" TextWrapping="Wrap"/>
+                                            <ComboBox x:Name="PrimaryKeyComboBox" Margin="0,5,0,0" 
+                                                     SelectionChanged="PrimaryKeyComboBox_SelectionChanged"/>
+                                        </StackPanel>
+                                    </Border>
 
-                                        <ListBox x:Name="FieldsListBox" Grid.Row="2">
+                                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                                        <ListBox x:Name="FieldsListBox">
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <StackPanel Orientation="Horizontal">
@@ -155,117 +170,119 @@
                                                 </DataTemplate>
                                             </ListBox.ItemTemplate>
                                         </ListBox>
-                                    </Grid>
-                                </Border>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
 
-                    <!-- Different Databases Configuration -->
-                    <Border x:Name="DifferentDatabasesPanel" Style="{StaticResource DatabaseCardStyle}" Visibility="Collapsed">
-                        <StackPanel>
+                <!-- Different Databases Configuration -->
+                <Border x:Name="DifferentDatabasesPanel" Style="{StaticResource DatabaseCardStyle}" Visibility="Collapsed">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header -->
+                        <StackPanel Grid.Row="0" Margin="0,0,0,15">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                                 <iconPacks:PackIconMaterial Kind="SwapHorizontal" Width="24" Height="24" Foreground="#FF5722"/>
                                 <TextBlock Text="Table and Field Mapping" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="10,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
 
                             <TextBlock Text="Map target database tables and fields to source database:" 
-                                     Foreground="#666" Margin="0,0,0,15" TextWrapping="Wrap"/>
+                                     Foreground="#666" TextWrapping="Wrap"/>
+                        </StackPanel>
 
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="300"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                        <!-- Content -->
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="300"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                                <!-- Target Tables -->
-                                <Border Grid.Column="0" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5" Margin="0,0,10,0">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="40"/>
-                                            <RowDefinition Height="*"/>
-                                        </Grid.RowDefinitions>
+                            <!-- Target Tables -->
+                            <Border Grid.Column="0" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5" Margin="0,0,10,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="40"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
 
-                                        <Border Grid.Row="0" Background="#F8F8F8" CornerRadius="5,5,0,0">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
-                                                <iconPacks:PackIconMaterial Kind="DatabaseImport" Width="16" Height="16" Margin="0,0,5,0"/>
-                                                <TextBlock Text="Target Tables" FontWeight="Bold"/>
-                                                <Button Content="Refresh" Margin="10,0,0,0" Padding="8,4" 
-                                                      Click="RefreshTargetTables_Click"/>
-                                            </StackPanel>
-                                        </Border>
+                                    <Border Grid.Row="0" Background="#F8F8F8" CornerRadius="5,5,0,0">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
+                                            <iconPacks:PackIconMaterial Kind="DatabaseImport" Width="16" Height="16" Margin="0,0,5,0"/>
+                                            <TextBlock Text="Target Tables" FontWeight="Bold"/>
+                                            <Button Content="Refresh" Margin="10,0,0,0" Padding="8,4" 
+                                                  Click="RefreshTargetTables_Click"/>
+                                        </StackPanel>
+                                    </Border>
 
-                                        <ListBox x:Name="TargetTablesListBox" Grid.Row="1" SelectionChanged="TargetTablesListBox_SelectionChanged">
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                        <ListBox x:Name="TargetTablesListBox" SelectionChanged="TargetTablesListBox_SelectionChanged">
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <StackPanel Orientation="Horizontal">
-                                                        <CheckBox IsChecked="{Binding IsSelected}" Margin="0,0,8,0"/>
                                                         <iconPacks:PackIconMaterial Kind="Table" Width="16" Height="16" Margin="0,0,5,0"/>
                                                         <TextBlock Text="{Binding TableName}"/>
                                                     </StackPanel>
                                                 </DataTemplate>
                                             </ListBox.ItemTemplate>
                                         </ListBox>
-                                    </Grid>
-                                </Border>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
 
-                                <!-- Field Mapping -->
-                                <Border Grid.Column="1" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="40"/>
-                                            <RowDefinition Height="*"/>
-                                        </Grid.RowDefinitions>
+                            <!-- Field Mappings -->
+                            <Border Grid.Column="1" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="5">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="40"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
 
-                                        <Border Grid.Row="0" Background="#F8F8F8" CornerRadius="5,5,0,0">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
-                                                <TextBlock Text="Field Mapping" FontWeight="Bold"/>
-                                                <TextBlock x:Name="SelectedTargetTableText" Text="(Select a target table)" 
-                                                         Margin="10,0,0,0" Foreground="#999" FontStyle="Italic"/>
-                                            </StackPanel>
-                                        </Border>
+                                    <Border Grid.Row="0" Background="#F8F8F8" CornerRadius="5,5,0,0">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
+                                            <iconPacks:PackIconMaterial Kind="TableColumn" Width="16" Height="16" Margin="0,0,5,0"/>
+                                            <TextBlock x:Name="SelectedTargetTableText" Text="(Select a target table)" 
+                                                     Margin="5,0,0,0" Foreground="#999" FontStyle="Italic"/>
+                                        </StackPanel>
+                                    </Border>
 
-                                        <DataGrid x:Name="FieldMappingDataGrid" Grid.Row="1" AutoGenerateColumns="False" 
-                                                CanUserAddRows="False" CanUserDeleteRows="False" 
-                                                GridLinesVisibility="Horizontal" HeadersVisibility="Column">
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                        <DataGrid x:Name="FieldMappingDataGrid" AutoGenerateColumns="False" CanUserAddRows="False">
                                             <DataGrid.Columns>
-                                                <DataGridCheckBoxColumn Header="Map" Binding="{Binding IsSelected}" Width="50"/>
-                                                <DataGridTextColumn Header="Target Field" Binding="{Binding TargetField}" IsReadOnly="True" Width="150"/>
-                                                <DataGridTextColumn Header="Type" Binding="{Binding TargetDataType}" IsReadOnly="True" Width="80"/>
-                                                <DataGridComboBoxColumn Header="Source Table" 
-                                                                      SelectedValueBinding="{Binding SourceTable}"
-                                                                      DisplayMemberPath="TableName"
-                                                                      SelectedValuePath="TableName" Width="120"/>
-                                                <DataGridComboBoxColumn Header="Source Field" 
-                                                                      SelectedValueBinding="{Binding SourceField}"
-                                                                      DisplayMemberPath="FieldName"
-                                                                      SelectedValuePath="FieldName" Width="120"/>
+                                                <DataGridCheckBoxColumn Header="Select" Binding="{Binding IsSelected}" Width="60"/>
+                                                <DataGridTextColumn Header="Target Field" Binding="{Binding TargetField}" Width="150"/>
+                                                <DataGridTextColumn Header="Target Data Type" Binding="{Binding TargetDataType}" Width="100"/>
+                                                <DataGridComboBoxColumn Header="Source Table" Width="150"/>
+                                                <DataGridComboBoxColumn Header="Source Field" Width="150"/>
                                                 <DataGridTemplateColumn Header="Custom Query" Width="*">
                                                     <DataGridTemplateColumn.CellTemplate>
                                                         <DataTemplate>
-                                                            <Button Content="Edit Query" Padding="5,2" 
-                                                                  Click="EditCustomQuery_Click" Tag="{Binding}"/>
+                                                            <Button Content="Edit" Padding="5,2" Click="EditCustomQuery_Click" Tag="{Binding}"/>
                                                         </DataTemplate>
                                                     </DataGridTemplateColumn.CellTemplate>
                                                 </DataGridTemplateColumn>
                                             </DataGrid.Columns>
                                         </DataGrid>
-                                    </Grid>
-                                </Border>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                </Grid>
-            </StackPanel>
-        </ScrollViewer>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
 
         <!-- Footer -->
         <Border Grid.Row="2" Background="White" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="20,0">
-                <Button Content="Cancel" Margin="0,0,10,0" Padding="20,8" Click="Cancel_Click"/>
-                <Button x:Name="SaveConfigButton" Content="Save Configuration" 
-                      Background="#4CAF50" Foreground="White" Padding="20,8" 
-                      Click="SaveConfig_Click"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="20,0">
+                <Button x:Name="CancelButton" Content="Cancel" Padding="20,10" Margin="0,0,10,0" Click="Cancel_Click"/>
+                <Button x:Name="SaveButton" Content="Save Configuration" Background="#2196F3" Foreground="White" 
+                        Padding="20,10" Click="SaveConfig_Click"/>
             </StackPanel>
         </Border>
     </Grid>
