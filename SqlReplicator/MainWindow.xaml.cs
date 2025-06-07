@@ -343,7 +343,7 @@ namespace SqlReplicator
                 using (var connection = new SqlConnection(baseConnectionString))
                 {
                     await connection.OpenAsync();
-                    using (var command = new SqlCommand("SELECT COUNT(*) FROM ReplicationConfigs", connection))
+                    using (var command = new SqlCommand("SELECT COUNT(*) FROM ReplicationConfig", connection))
                     {
                         var configCount = Convert.ToInt32(await command.ExecuteScalarAsync());
                         if (configCount > 0)
@@ -414,35 +414,65 @@ namespace SqlReplicator
             }
         }
 
-        private void CompleteSetup_Click(object sender, RoutedEventArgs e)
+        private async void CompleteSetup_Click(object sender, RoutedEventArgs e)
         {
-            // Build final connection strings with selected databases
-            var baseConnectionString = connectionStrings["Base"];
-            var sourceConnectionString = connectionStrings["Source"];
-            var targetConnectionString = connectionStrings["Target"];
+            try
+            {
+                // Build final connection strings with selected databases
+                var baseConnectionString = connectionStrings["Base"];
+                var sourceConnectionString = connectionStrings["Source"];
+                var targetConnectionString = connectionStrings["Target"];
 
-            if (!string.IsNullOrWhiteSpace(BaseDatabaseCombo.Text))
-                baseConnectionString += $"Database={BaseDatabaseCombo.Text};";
+                if (!string.IsNullOrWhiteSpace(BaseDatabaseCombo.Text))
+                    baseConnectionString += $"Database={BaseDatabaseCombo.Text};";
 
-            if (!string.IsNullOrWhiteSpace(SourceDatabaseCombo.Text))
-                sourceConnectionString += $"Database={SourceDatabaseCombo.Text};";
+                if (!string.IsNullOrWhiteSpace(SourceDatabaseCombo.Text))
+                    sourceConnectionString += $"Database={SourceDatabaseCombo.Text};";
 
-            if (!string.IsNullOrWhiteSpace(TargetDatabaseCombo.Text))
-                targetConnectionString += $"Database={TargetDatabaseCombo.Text};";
+                if (!string.IsNullOrWhiteSpace(TargetDatabaseCombo.Text))
+                    targetConnectionString += $"Database={TargetDatabaseCombo.Text};";
 
-            var result = $"Setup Complete!\n\n" +
-                        $"Base Database Connection:\n{baseConnectionString}\n\n" +
-                        $"Source Database Connection:\n{sourceConnectionString}\n\n" +
-                        $"Target Database Connection:\n{targetConnectionString}";
+                // Save connection strings to database
+                using (var connection = new SqlConnection(baseConnectionString))
+                {
+                    await connection.OpenAsync();
+                    using (var command = new SqlCommand())
+                    {
+                        command.Connection = connection;
+                        command.CommandText = @"
+                            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ReplicationConfig')
+                            BEGIN
+                                CREATE TABLE ReplicationConfig (
+                                    Id INT IDENTITY(1,1) PRIMARY KEY,
+                                    BaseConnectionString NVARCHAR(MAX),
+                                    SourceConnectionString NVARCHAR(MAX),
+                                    TargetConnectionString NVARCHAR(MAX),
+                                    CreatedAt DATETIME DEFAULT GETDATE()
+                                )
+                            END
 
-            MessageBox.Show(result, "Configuration Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                            INSERT INTO ReplicationConfig (BaseConnectionString, SourceConnectionString, TargetConnectionString)
+                            VALUES (@BaseConnectionString, @SourceConnectionString, @TargetConnectionString)";
 
-            // Here you can save the connection strings or proceed to next phase
-            StatusLabel.Text = "Configuration completed successfully!";
+                        command.Parameters.AddWithValue("@BaseConnectionString", baseConnectionString);
+                        command.Parameters.AddWithValue("@SourceConnectionString", sourceConnectionString);
+                        command.Parameters.AddWithValue("@TargetConnectionString", targetConnectionString);
 
-            var configWindow = new ConfigurationWindow(baseConnectionString, sourceConnectionString, targetConnectionString);
-            configWindow.Owner = this;
-            configWindow.ShowDialog();
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+
+                MessageBox.Show("Connection strings saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                StatusLabel.Text = "Configuration completed successfully!";
+
+                var configWindow = new ConfigurationWindow(baseConnectionString, sourceConnectionString, targetConnectionString);
+                configWindow.Owner = this;
+                configWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private async void GoToConfig_Click(object sender, RoutedEventArgs e)
@@ -464,7 +494,7 @@ namespace SqlReplicator
                     await connection.OpenAsync();
                     using (var command = new SqlCommand(
                         @"SELECT TOP 1 SourceConnectionString, TargetConnectionString 
-                          FROM ReplicationConfigs 
+                          FROM ReplicationConfig 
                           ORDER BY Id DESC", connection))
                     {
                         using (var reader = await command.ExecuteReaderAsync())
@@ -540,7 +570,7 @@ namespace SqlReplicator
 
                                 // Delete from main config table
                                 var deleteConfigs = new SqlCommand(
-                                    "DELETE FROM ReplicationConfigs", connection, transaction);
+                                    "DELETE FROM ReplicationConfig", connection, transaction);
                                 await deleteConfigs.ExecuteNonQueryAsync();
 
                                 transaction.Commit();
