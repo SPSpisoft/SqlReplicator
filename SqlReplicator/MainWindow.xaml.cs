@@ -19,7 +19,7 @@ namespace SqlReplicator
     {
         private int currentStep = 1;
         private readonly Dictionary<string, string> connectionStrings = new Dictionary<string, string>();
-        private CancellationTokenSource _refreshCancellation;
+        private CancellationTokenSource? _refreshCancellation;
 
         public MainWindow()
         {
@@ -27,7 +27,7 @@ namespace SqlReplicator
             RefreshServersButton.IsEnabled = false;
             StartRefreshAnimation();
             StatusLabel.Text = "Please wait while loading SQL Server instances...";
-            LoadSqlServerInstances();
+            _ = LoadSqlServerInstances();
         }
 
         private async Task LoadSqlServerInstances()
@@ -56,8 +56,8 @@ namespace SqlReplicator
                             if (_refreshCancellation.Token.IsCancellationRequested)
                                 return;
 
-                            var serverName = row["ServerName"].ToString();
-                            var instanceName = row["InstanceName"].ToString();
+                            var serverName = row["ServerName"].ToString() ?? string.Empty;
+                            var instanceName = row["InstanceName"].ToString() ?? string.Empty;
 
                             if (string.IsNullOrEmpty(instanceName))
                                 instances.Add(serverName);
@@ -104,7 +104,7 @@ namespace SqlReplicator
                     StopRefreshAnimation();
                     RefreshServersButton.IsEnabled = true;
                     EnableFormControls();
-                    if (!_refreshCancellation.Token.IsCancellationRequested)
+                    if (_refreshCancellation != null && !_refreshCancellation.Token.IsCancellationRequested)
                     {
                         StatusLabel.Text = "SQL Server instances loaded successfully. Please configure your connection settings.";
                     }
