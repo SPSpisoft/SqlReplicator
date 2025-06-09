@@ -10,6 +10,21 @@
 
     <Grid Background="#F5F5F5">
         <Grid.Resources>
+            <Style x:Key="StepButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
+                <Setter Property="Background" Value="#E0E0E0"/>
+                <Setter Property="Foreground" Value="#333333"/>
+                <Setter Property="Padding" Value="15,8"/>
+                <Setter Property="Margin" Value="5,0"/>
+                <Setter Property="BorderThickness" Value="0"/>
+            </Style>
+            <Style x:Key="ActiveStepButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
+                <Setter Property="Background" Value="#4CAF50"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Padding" Value="15,8"/>
+                <Setter Property="Margin" Value="5,0"/>
+                <Setter Property="BorderThickness" Value="0"/>
+            </Style>
             <Style x:Key="RefreshButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
                 <Setter Property="Width" Value="32"/>
                 <Setter Property="Height" Value="32"/>
@@ -75,13 +90,13 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Button x:Name="Step1Button" Content="1. Base Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="Step1Button_Click"/>
+                    <Button x:Name="Step1Button" Content="1. Base Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
                     <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                    <Button x:Name="Step2Button" Content="2. Source Database" Style="{StaticResource StepButtonStyle}" Click="Step2Button_Click"/>
+                    <Button x:Name="Step2Button" Content="2. Source Database" Style="{StaticResource StepButtonStyle}" Click="StepButton_Click"/>
                     <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                    <Button x:Name="Step3Button" Content="3. Target Database" Style="{StaticResource StepButtonStyle}" Click="Step3Button_Click"/>
+                    <Button x:Name="Step3Button" Content="3. Target Database" Style="{StaticResource StepButtonStyle}" Click="StepButton_Click"/>
                     <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                    <Button x:Name="ConfigStepButton" Content="4. Configuration" Style="{StaticResource StepButtonStyle}" Click="ConfigStepButton_Click"/>
+                    <Button x:Name="ConfigStepButton" Content="4. Configuration" Style="{StaticResource StepButtonStyle}" Click="StepButton_Click"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -264,6 +279,27 @@
                             <Button x:Name="TargetCompleteButton" Content="Complete Setup" Background="#4CAF50" Foreground="White" Padding="20,8" IsEnabled="False" Click="CompleteSetup_Click"/>
                         </StackPanel>
                     </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Step 4: Configuration -->
+            <Border x:Name="Step4Panel" Style="{StaticResource DatabaseCardStyle}" Visibility="Collapsed">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                        <iconPacks:PackIconMaterial Kind="Cog" Width="32" Height="32" Foreground="#9C27B0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Configuration" FontSize="24" FontWeight="Bold" Foreground="#333" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Configure replication settings and table mappings." 
+                               Foreground="#666" Margin="0,0,0,20" TextWrapping="Wrap"/>
+
+                    <!-- Configuration content will be added later -->
+
+                    <!-- Navigation Row -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Content="Previous" Margin="0,0,10,0" Click="PreviousStep_Click"/>
+                        <Button x:Name="ConfigCompleteButton" Content="Complete Setup" Background="#2196F3" Foreground="White" Padding="20,8" Click="CompleteSetup_Click"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </Grid>

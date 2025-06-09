@@ -15,11 +15,24 @@ using System.Threading;
 
 namespace SqlReplicator
 {
+    public class DatabaseInfo
+    {
+        public string ServerName { get; set; } = string.Empty;
+        public string DatabaseName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string ConnectionString { get; set; } = string.Empty;
+    }
+
     public partial class MainWindow : MetroWindow
     {
         private int currentStep = 1;
         private readonly Dictionary<string, string> connectionStrings = new Dictionary<string, string>();
         private CancellationTokenSource? _refreshCancellation;
+        private DatabaseInfo? sourceDb;
+        private DatabaseInfo? targetDb;
+        private List<TableInfo>? selectedTables;
+        private string replicationType = "Full";
 
         public MainWindow()
         {
@@ -369,11 +382,9 @@ namespace SqlReplicator
 
         private void NextStep_Click(object sender, RoutedEventArgs e)
         {
-            if (currentStep < 3)
+            if (currentStep < 4)
             {
-                currentStep++;
-                UpdateStepVisibility();
-                UpdateStepButtons();
+                ShowStep(currentStep + 1);
             }
         }
 
@@ -392,6 +403,7 @@ namespace SqlReplicator
             Step1Panel.Visibility = currentStep == 1 ? Visibility.Visible : Visibility.Collapsed;
             Step2Panel.Visibility = currentStep == 2 ? Visibility.Visible : Visibility.Collapsed;
             Step3Panel.Visibility = currentStep == 3 ? Visibility.Visible : Visibility.Collapsed;
+            Step4Panel.Visibility = currentStep == 4 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void UpdateStepButtons()
@@ -399,18 +411,16 @@ namespace SqlReplicator
             Step1Button.IsEnabled = currentStep != 1;
             Step2Button.IsEnabled = currentStep != 2;
             Step3Button.IsEnabled = currentStep != 3;
+            ConfigStepButton.IsEnabled = currentStep != 4;
 
-            switch (currentStep)
+            // Update button styles based on current step
+            var buttons = new[] { Step1Button, Step2Button, Step3Button, ConfigStepButton };
+            for (int i = 0; i < buttons.Length; i++)
             {
-                case 1:
-                    StatusLabel.Text = "Please configure your base database connection";
-                    break;
-                case 2:
-                    StatusLabel.Text = "Please configure your source database connection";
-                    break;
-                case 3:
-                    StatusLabel.Text = "Please configure your target database connection";
-                    break;
+                if (buttons[i] != null)
+                {
+                    //buttons[i].Style = (Style)FindResource(i + 1 == currentStep ? "ActiveStepButtonStyle" : "StepButtonStyle");
+                }
             }
         }
 
@@ -596,39 +606,49 @@ namespace SqlReplicator
             }
         }
 
-        private void Step1Button_Click(object sender, RoutedEventArgs e)
+        private void StepButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!Step1Button.IsEnabled) return;
-            ShowStep(1);
-        }
+            if (sender is not Button button) return;
 
-        private void Step2Button_Click(object sender, RoutedEventArgs e)
-        {
-            if (!Step2Button.IsEnabled) return;
-            ShowStep(2);
-        }
+            int stepNumber = button.Name switch
+            {
+                "Step1Button" => 1,
+                "Step2Button" => 2,
+                "Step3Button" => 3,
+                "ConfigStepButton" => 4,
+                _ => 1
+            };
 
-        private void Step3Button_Click(object sender, RoutedEventArgs e)
-        {
-            if (!Step3Button.IsEnabled) return;
-            ShowStep(3);
-        }
-
-        private void ConfigStepButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!ConfigStepButton.IsEnabled) return;
-            GoToConfig_Click(sender, e);
+            ShowStep(stepNumber);
         }
 
         private void ShowStep(int stepNumber)
         {
-            Step1Panel.Visibility = stepNumber == 1 ? Visibility.Visible : Visibility.Collapsed;
-            Step2Panel.Visibility = stepNumber == 2 ? Visibility.Visible : Visibility.Collapsed;
-            Step3Panel.Visibility = stepNumber == 3 ? Visibility.Visible : Visibility.Collapsed;
+            // Hide all panels
+            Step1Panel.Visibility = Visibility.Collapsed;
+            Step2Panel.Visibility = Visibility.Collapsed;
+            Step3Panel.Visibility = Visibility.Collapsed;
+            Step4Panel.Visibility = Visibility.Collapsed;
 
-            Step1Button.IsEnabled = stepNumber != 1;
-            Step2Button.IsEnabled = stepNumber != 2;
-            Step3Button.IsEnabled = stepNumber != 3;
+            // Show selected panel
+            switch (stepNumber)
+            {
+                case 1:
+                    Step1Panel.Visibility = Visibility.Visible;
+                    break;
+                case 2:
+                    Step2Panel.Visibility = Visibility.Visible;
+                    break;
+                case 3:
+                    Step3Panel.Visibility = Visibility.Visible;
+                    break;
+                case 4:
+                    Step4Panel.Visibility = Visibility.Visible;
+                    break;
+            }
+
+            currentStep = stepNumber;
+            UpdateStepButtons();
         }
 
         private void UpdateConfigButtonState()
