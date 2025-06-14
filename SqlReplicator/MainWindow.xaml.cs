@@ -472,12 +472,17 @@ namespace SqlReplicator
                     }
                 }
 
-                MessageBox.Show("Connection strings saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                StatusLabel.Text = "Configuration completed successfully!";
+                //MessageBox.Show("Connection strings saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                //StatusLabel.Text = "Configuration completed successfully!";
 
-                var configWindow = new ConfigurationWindow(baseConnectionString, sourceConnectionString, targetConnectionString);
-                configWindow.Owner = this;
-                configWindow.ShowDialog();
+                //var configWindow = new ConfigurationWindow(baseConnectionString, sourceConnectionString, targetConnectionString);
+                //configWindow.Owner = this;
+                //configWindow.ShowDialog();
+
+                if (currentStep < 4)
+                {
+                    ShowStep(currentStep + 1);
+                }
             }
             catch (Exception ex)
             {
@@ -522,6 +527,10 @@ namespace SqlReplicator
 
                                 // Refresh config status after window is closed
                                 await CheckExistingConfigs();
+
+                                //var configWindow = new ConfigurationWindow(baseConnectionString, sourceConnectionString, targetConnectionString);
+                                //configWindow.Owner = this;
+                                //configWindow.ShowDialog();
                             }
                             else
                             {
@@ -655,5 +664,92 @@ namespace SqlReplicator
         {
             ConfigStepButton.IsEnabled = ConfigButtonsPanel.Visibility == Visibility.Visible;
         }
+
+        //********************************** GENERATOR *********************************
+
+        private async void ManageServiceButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Disable the button to prevent multiple clicks
+            ((Button)sender).IsEnabled = false;
+            ProgressStackPanel.Children.Clear(); // Clear previous steps
+
+            // Ensure the application is running with Administrator privileges
+            if (!IsRunningAsAdministrator())
+            {
+                DisplayProgress("Please run the application as Administrator.", false);
+                MessageBox.Show("To manage the Windows service, the application must be run with Administrator privileges.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ((Button)sender).IsEnabled = true;
+                return;
+            }
+
+            // Get the base database connection string from the TextBox
+            string baseConnectionString = BaseConnectionStringTextBox.Text;
+            if (string.IsNullOrWhiteSpace(baseConnectionString))
+            {
+                DisplayProgress("Base database connection string cannot be empty.", false);
+                MessageBox.Show("Please enter the base database connection string.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ((Button)sender).IsEnabled = true;
+                return;
+            }
+
+            // Create an IProgress object to report status to the UI
+            var progress = new Progress<Tuple<string, bool>>(report =>
+            {
+                // Report status to the UI thread
+                Dispatcher.Invoke(() => DisplayProgress(report.Item1, report.Item2));
+            });
+
+            try
+            {
+                bool success = await ServiceInstallerManager.ManageReplicationService(baseConnectionString, progress);
+
+                if (success)
+                {
+                    MessageBox.Show("Sync service management completed successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Service management operation failed. Please check the application logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                DisplayProgress($"Unexpected error: {ex.Message}", false);
+                MessageBox.Show($"Unexpected error while managing the service: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                ((Button)sender).IsEnabled = true; // Re-enable the button
+            }
+        }
+
+        /// <summary>
+        /// Displays the progress of the operation in the UI as a visual checklist.
+        /// </summary>
+        /// <param name="message">Status message.</param>
+        /// <param name="isSuccess">Indicates whether the operation was successful.</param>
+        private void DisplayProgress(string message, bool isSuccess)
+        {
+            var textBlock = new TextBlock
+            {
+                Text = (isSuccess ? "✓ " : "✗ ") + message, // '✓' for success, '✗' for failure
+                Foreground = isSuccess ? Brushes.DarkGreen : Brushes.Red,
+                Margin = new Thickness(0, 5, 0, 0)
+            };
+            ProgressStackPanel.Children.Add(textBlock);
+            // Ensure the latest message is visible in the ScrollViewer
+            (ProgressStackPanel.Parent as ScrollViewer)?.ScrollToEnd();
+        }
+
+        /// <summary>
+        /// Checks whether the application is running with Administrator privileges.
+        /// </summary>
+        private bool IsRunningAsAdministrator()
+        {
+            var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+            var principal = new System.Security.Principal.WindowsPrincipal(identity);
+            return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+        }
+
     }
 }
