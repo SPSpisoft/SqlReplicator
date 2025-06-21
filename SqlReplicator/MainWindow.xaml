@@ -4,18 +4,19 @@
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                  Title="SQL Replicator - Database Connection Setup" 
-                 Height="700" Width="800"
+                 Height="600" Width="650"
                  WindowStartupLocation="CenterScreen"
                  ResizeMode="CanMinimize">
 
     <Grid Background="#F5F5F5">
         <Grid.Resources>
-            <Style x:Key="StepButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
+
+            <!--<Style x:Key="StepButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
                 <Setter Property="Background" Value="#E0E0E0"/>
                 <Setter Property="Foreground" Value="#333333"/>
                 <Setter Property="Padding" Value="15,8"/>
                 <Setter Property="Margin" Value="5,0"/>
-                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="BorderThickness" Value="3"/>
             </Style>
             <Style x:Key="ActiveStepButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
                 <Setter Property="Background" Value="#4CAF50"/>
@@ -25,6 +26,7 @@
                 <Setter Property="Margin" Value="5,0"/>
                 <Setter Property="BorderThickness" Value="0"/>
             </Style>
+            
             <Style x:Key="RefreshButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
                 <Setter Property="Width" Value="32"/>
                 <Setter Property="Height" Value="32"/>
@@ -57,7 +59,7 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
-            </Style>
+            </Style>-->
         </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="100"/>
@@ -77,26 +79,16 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Orientation="Horizontal" Margin="20,0,20,0">
-                    <Button x:Name="RefreshServersButton" Click="RefreshServers_Click" 
-                            Style="{StaticResource RefreshButtonStyle}" 
-                            ToolTip="Refresh SQL Server Instances">
-                        <iconPacks:PackIconMaterial x:Name="RefreshIcon" Kind="Sync" Width="16" Height="16" Foreground="White">
-                            <iconPacks:PackIconMaterial.RenderTransform>
-                                <RotateTransform x:Name="RefreshIconRotation" Angle="0" CenterX="8" CenterY="8"/>
-                            </iconPacks:PackIconMaterial.RenderTransform>
-                        </iconPacks:PackIconMaterial>
-                    </Button>
-                </StackPanel>
+
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Button x:Name="Step1Button" Content="1. Base Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
+                    <Button x:Name="Step1Button" Content="Base Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
                     <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                    <Button x:Name="Step2Button" Content="2. Source Database" Style="{StaticResource StepButtonStyle}" Click="StepButton_Click"/>
+                    <Button x:Name="Step2Button" Content="Source Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
                     <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                    <Button x:Name="Step3Button" Content="3. Target Database" Style="{StaticResource StepButtonStyle}" Click="StepButton_Click"/>
+                    <Button x:Name="Step3Button" Content="Target Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
                     <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                    <Button x:Name="ConfigStepButton" Content="4. Configuration" Style="{StaticResource StepButtonStyle}" Click="StepButton_Click"/>
+                    <Button x:Name="Step4Button" Content="Configoration" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -339,6 +331,17 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="20,0,20,0">
+                    <Button x:Name="RefreshServersButton" Click="RefreshServers_Click" 
+                            Style="{StaticResource RefreshButtonStyle}" 
+                            ToolTip="Refresh SQL Server Instances">
+                        <iconPacks:PackIconMaterial x:Name="RefreshIcon" Kind="Sync" Width="16" Height="16" Foreground="White">
+                            <iconPacks:PackIconMaterial.RenderTransform>
+                                <RotateTransform x:Name="RefreshIconRotation" Angle="0" CenterX="8" CenterY="8"/>
+                            </iconPacks:PackIconMaterial.RenderTransform>
+                        </iconPacks:PackIconMaterial>
+                    </Button>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <iconPacks:PackIconMaterial Kind="Information" Foreground="#666" Width="16" Height="16" Margin="0,0,5,0"/>
                     <TextBlock x:Name="StatusLabel" Text="Please configure your base database connection" Foreground="#666"/>

@@ -37,18 +37,19 @@ namespace SqlReplicator
         public MainWindow()
         {
             InitializeComponent();
-            RefreshServersButton.IsEnabled = false;
-            StartRefreshAnimation();
             StatusLabel.Text = "Please wait while loading SQL Server instances...";
             _ = LoadSqlServerInstances();
         }
 
         private async Task LoadSqlServerInstances()
         {
+            RefreshServersButton.IsEnabled = false;
+            StartRefreshAnimation();
+
             try
             {
                 _refreshCancellation = new CancellationTokenSource();
-                DisableFormControls();
+                AbleFormControls(false);
 
                 await Task.Run(() =>
                 {
@@ -116,7 +117,8 @@ namespace SqlReplicator
                 {
                     StopRefreshAnimation();
                     RefreshServersButton.IsEnabled = true;
-                    EnableFormControls();
+                    AbleFormControls(true);
+                    UpdateStepButtons();
                     if (_refreshCancellation != null && !_refreshCancellation.Token.IsCancellationRequested)
                     {
                         StatusLabel.Text = "SQL Server instances loaded successfully. Please configure your connection settings.";
@@ -125,55 +127,68 @@ namespace SqlReplicator
             }
         }
 
-        private void DisableFormControls()
+        //private void DisableFormControls()
+        //{
+        //    //BaseServerCombo.IsEnabled = false;
+        //    //BaseUsernameBox.IsEnabled = false;
+        //    //BasePasswordBox.IsEnabled = false;
+        //    //BaseDatabaseCombo.IsEnabled = false;
+        //    //BaseTestButton.IsEnabled = false;
+        //    //BaseNextButton.IsEnabled = false;
+        //    Step1Panel.IsEnabled = false;
+        //    ConfigButtonsPanel.IsEnabled = false;
+
+        //    SourceServerCombo.IsEnabled = false;
+        //    SourceUsernameBox.IsEnabled = false;
+        //    SourcePasswordBox.IsEnabled = false;
+        //    SourceDatabaseCombo.IsEnabled = false;
+        //    SourceTestButton.IsEnabled = false;
+        //    SourceNextButton.IsEnabled = false;
+
+        //    TargetServerCombo.IsEnabled = false;
+        //    TargetUsernameBox.IsEnabled = false;
+        //    TargetPasswordBox.IsEnabled = false;
+        //    TargetDatabaseCombo.IsEnabled = false;
+        //    TargetTestButton.IsEnabled = false;
+        //    TargetCompleteButton.IsEnabled = false;
+        //}
+
+        private void AbleFormControls(bool setAble)
         {
-            BaseServerCombo.IsEnabled = false;
-            BaseUsernameBox.IsEnabled = false;
-            BasePasswordBox.IsEnabled = false;
-            BaseDatabaseCombo.IsEnabled = false;
-            BaseTestButton.IsEnabled = false;
-            BaseNextButton.IsEnabled = false;
+            Step1Button.IsEnabled = setAble;
+            Step2Button.IsEnabled = setAble;
+            Step3Button.IsEnabled = setAble;
+            Step4Button.IsEnabled = setAble;
 
-            SourceServerCombo.IsEnabled = false;
-            SourceUsernameBox.IsEnabled = false;
-            SourcePasswordBox.IsEnabled = false;
-            SourceDatabaseCombo.IsEnabled = false;
-            SourceTestButton.IsEnabled = false;
-            SourceNextButton.IsEnabled = false;
+            Step1Panel.IsEnabled = setAble;
+            //BaseServerCombo.IsEnabled = setAble;
+            //BaseUsernameBox.IsEnabled = setAble;
+            //BasePasswordBox.IsEnabled = setAble;
+            //BaseDatabaseCombo.IsEnabled = setAble;
+            //BaseTestButton.IsEnabled = setAble;
+            //if (BaseStatusIcon.Visibility == Visibility.Visible)
+            //    BaseNextButton.IsEnabled = setAble;
 
-            TargetServerCombo.IsEnabled = false;
-            TargetUsernameBox.IsEnabled = false;
-            TargetPasswordBox.IsEnabled = false;
-            TargetDatabaseCombo.IsEnabled = false;
-            TargetTestButton.IsEnabled = false;
-            TargetCompleteButton.IsEnabled = false;
-        }
+            Step2Panel.IsEnabled = setAble;
+            //SourceServerCombo.IsEnabled = setAble;
+            //SourceUsernameBox.IsEnabled = setAble;
+            //SourcePasswordBox.IsEnabled = setAble;
+            //SourceDatabaseCombo.IsEnabled = setAble;
+            //SourceTestButton.IsEnabled = setAble;
+            //if (SourceStatusIcon.Visibility == Visibility.Visible)
+            //    SourceNextButton.IsEnabled = setAble;
 
-        private void EnableFormControls()
-        {
-            BaseServerCombo.IsEnabled = true;
-            BaseUsernameBox.IsEnabled = true;
-            BasePasswordBox.IsEnabled = true;
-            BaseDatabaseCombo.IsEnabled = true;
-            BaseTestButton.IsEnabled = true;
-            if (BaseStatusIcon.Visibility == Visibility.Visible)
-                BaseNextButton.IsEnabled = true;
+            Step3Panel.IsEnabled = setAble;
+            //TargetServerCombo.IsEnabled = setAble;
+            //TargetUsernameBox.IsEnabled = setAble;
+            //TargetPasswordBox.IsEnabled = setAble;
+            //TargetDatabaseCombo.IsEnabled = setAble;
+            //TargetTestButton.IsEnabled = setAble;
+            //if (TargetStatusIcon.Visibility == Visibility.Visible)
+            //    TargetCompleteButton.IsEnabled = setAble;
 
-            SourceServerCombo.IsEnabled = true;
-            SourceUsernameBox.IsEnabled = true;
-            SourcePasswordBox.IsEnabled = true;
-            SourceDatabaseCombo.IsEnabled = true;
-            SourceTestButton.IsEnabled = true;
-            if (SourceStatusIcon.Visibility == Visibility.Visible)
-                SourceNextButton.IsEnabled = true;
+            Step4Panel.IsEnabled = setAble;
 
-            TargetServerCombo.IsEnabled = true;
-            TargetUsernameBox.IsEnabled = true;
-            TargetPasswordBox.IsEnabled = true;
-            TargetDatabaseCombo.IsEnabled = true;
-            TargetTestButton.IsEnabled = true;
-            if (TargetStatusIcon.Visibility == Visibility.Visible)
-                TargetCompleteButton.IsEnabled = true;
         }
 
         private async void RefreshServers_Click(object sender, RoutedEventArgs e)
@@ -185,11 +200,10 @@ namespace SqlReplicator
                 {
                     // Cancel the refresh operation
                     _refreshCancellation.Cancel();
-                    return;
                 }
 
-                button.IsEnabled = false;
-                StartRefreshAnimation();
+                //button.IsEnabled = false;
+                //StartRefreshAnimation();
             }
 
             StatusLabel.Text = "Refreshing SQL Server instances...";
@@ -408,18 +422,18 @@ namespace SqlReplicator
 
         private void UpdateStepButtons()
         {
-            Step1Button.IsEnabled = currentStep != 1;
-            Step2Button.IsEnabled = currentStep != 2;
-            Step3Button.IsEnabled = currentStep != 3;
-            ConfigStepButton.IsEnabled = currentStep != 4;
+            //Step1Button.IsEnabled = currentStep != 1;
+            //Step2Button.IsEnabled = currentStep != 2;
+            //Step3Button.IsEnabled = currentStep != 3;
+            //Step4Button.IsEnabled = currentStep != 4;
 
             // Update button styles based on current step
-            var buttons = new[] { Step1Button, Step2Button, Step3Button, ConfigStepButton };
+            var buttons = new[] { Step1Button, Step2Button, Step3Button, Step4Button };
             for (int i = 0; i < buttons.Length; i++)
             {
                 if (buttons[i] != null)
                 {
-                    //buttons[i].Style = (Style)FindResource(i + 1 == currentStep ? "ActiveStepButtonStyle" : "StepButtonStyle");
+                    buttons[i].Style = (Style)FindResource(i + 1 == currentStep ? "ActiveStepButtonStyle" : "StepButtonStyle");
                 }
             }
         }
@@ -624,7 +638,7 @@ namespace SqlReplicator
                 "Step1Button" => 1,
                 "Step2Button" => 2,
                 "Step3Button" => 3,
-                "ConfigStepButton" => 4,
+                "Step4Button" => 4,
                 _ => 1
             };
 
@@ -662,7 +676,7 @@ namespace SqlReplicator
 
         private void UpdateConfigButtonState()
         {
-            ConfigStepButton.IsEnabled = ConfigButtonsPanel.Visibility == Visibility.Visible;
+            Step4Button.IsEnabled = ConfigButtonsPanel.Visibility == Visibility.Visible;
         }
 
         //********************************** GENERATOR *********************************

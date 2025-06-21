@@ -11,11 +11,50 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro.IconPacks.Material;component/Themes/PackIconMaterial.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Custom Styles -->
-            <Style x:Key="StepButtonStyle" TargetType="Button">
+            <!-- Grid.Resources : Custom Styles -->
+            <!--<Style x:Key="StepButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
+                <Setter Property="Background" Value="#E0E0E0"/>
+                <Setter Property="Foreground" Value="#333333"/>
+                <Setter Property="Padding" Value="15,8"/>
+                <Setter Property="Margin" Value="5,0"/>
+                <Setter Property="BorderThickness" Value="3"/>
+            </Style>-->
+
+            <Style x:Key="ActiveStepButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
+                <Setter Property="Background" Value="#7E9BaE"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Padding" Value="15,8"/>
+                <Setter Property="BorderThickness" Value="2"/>
+                <Setter Property="Width" Value="110"/>
+                <Setter Property="Height" Value="40"/>
+                <Setter Property="Margin" Value="5"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" 
+                                 CornerRadius="15" 
+                                 Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Background" Value="#E0E0f0"/>
+                        <Setter Property="Foreground" Value="White"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+           
+            <Style x:Key="StepButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
                 <Setter Property="Background" Value="#E0E0E0"/>
                 <Setter Property="Foreground" Value="#666"/>
-                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="BorderThickness" Value="2"/>
+                <Setter Property="Width" Value="110"/>
+                <Setter Property="Height" Value="40"/>
                 <Setter Property="Padding" Value="15,10"/>
                 <Setter Property="Margin" Value="5"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
@@ -23,7 +62,7 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Border Background="{TemplateBinding Background}" 
-                                    CornerRadius="25" 
+                                    CornerRadius="15" 
                                     Padding="{TemplateBinding Padding}">
                                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
@@ -32,10 +71,54 @@
                 </Setter>
                 <Style.Triggers>
                     <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Background" Value="#2196F3"/>
+                        <Setter Property="Background" Value="#E0E0E0"/>
                         <Setter Property="Foreground" Value="White"/>
                     </Trigger>
                 </Style.Triggers>
+            </Style>
+
+   
+            <!--<Style x:Key="ActiveStepButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
+                <Setter Property="Background" Value="DimGray"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Padding" Value="15,8"/>
+                <Setter Property="Margin" Value="5,0"/>
+                <Setter Property="BorderThickness" Value="0"/>
+            </Style>-->
+
+            <Style x:Key="RefreshButtonStyle" TargetType="Button" BasedOn="{StaticResource MahApps.Styles.Button}">
+                <Setter Property="Width" Value="32"/>
+                <Setter Property="Height" Value="32"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Background" Value="#2196F3"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}"
+                                   BorderBrush="{TemplateBinding BorderBrush}"
+                                   BorderThickness="{TemplateBinding BorderThickness}"
+                                   CornerRadius="16">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#40000000" Direction="270" ShadowDepth="2" BlurRadius="4" Opacity="0.3"/>
+                                </Border.Effect>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#1976D2"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter Property="Background" Value="#1565C0"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="#BDBDBD"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
             <Style x:Key="DatabaseCardStyle" TargetType="Border">
