@@ -357,6 +357,16 @@ namespace SqlReplicator
         {
             try
             {
+                SourceServerCombo.Text = "";
+                SourceUsernameBox.Text = "";
+                SourcePasswordBox.Password = "";
+                SourceDatabaseCombo.Text = "";
+
+                TargetServerCombo.Text = "";
+                TargetUsernameBox.Text = "";
+                TargetPasswordBox.Password = "";
+                TargetDatabaseCombo.Text = "";
+
                 var baseConnectionString = connectionStrings["Base"];
                 if (string.IsNullOrEmpty(baseConnectionString) || string.IsNullOrEmpty(BaseDatabaseCombo.Text))
                 {
@@ -370,13 +380,54 @@ namespace SqlReplicator
                 using (var connection = new SqlConnection(baseConnectionString))
                 {
                     await connection.OpenAsync();
-                    using (var command = new SqlCommand("SELECT COUNT(*) FROM ReplicationConfig", connection))
+                    using (var command_count = new SqlCommand("SELECT COUNT(*) FROM ReplicationConfig", connection))
                     {
-                        var configCount = Convert.ToInt32(await command.ExecuteScalarAsync());
+                        var configCount = Convert.ToInt32(await command_count.ExecuteScalarAsync());
                         if (configCount > 0)
                         {
                             ConfigButtonsPanel.Visibility = Visibility.Visible;
                             StatusLabel.Text = "Existing configuration found. You can view or delete it.";
+
+
+                            baseConnectionString += $"Database={BaseDatabaseCombo.Text};";
+
+
+                            //await connection.OpenAsync();
+                            using (var command = new SqlCommand(
+                                @"SELECT TOP 1 SourceConnectionString, TargetConnectionString 
+                                          FROM ReplicationConfig 
+                                          ORDER BY Id DESC", connection))
+                            {
+                                using (var reader = await command.ExecuteReaderAsync())
+                                {
+                                    if (await reader.ReadAsync())
+                                    {
+                                        var sourceConnectionString = reader.GetString(0);
+                                        var targetConnectionString = reader.GetString(1);
+
+                                        var sourceConnectionStringSplit = sourceConnectionString.Split(";");
+                                        var targetConnectionStringSplit = targetConnectionString.Split(";");
+
+                                        //SourceServerCombo.Text = sourceConnectionStringSplit.SingleOrDefault(e => e.Contains("Server"))?.Split("=")[1];
+                                        SourceUsernameBox.Text = sourceConnectionStringSplit.SingleOrDefault(e => e.Contains("User"))?.Split("=")[1];
+                                        SourcePasswordBox.Password = sourceConnectionStringSplit.SingleOrDefault(e => e.Contains("Password"))?.Split("=")[1];
+                                        SourceDatabaseCombo.Text = sourceConnectionStringSplit.SingleOrDefault(e => e.Contains("Database"))?.Split("=")[1];
+
+                                        //TargetServerCombo.Text = targetConnectionStringSplit.SingleOrDefault(e => e.Contains("Server"))?.Split("=")[1];
+                                        TargetUsernameBox.Text = targetConnectionStringSplit.SingleOrDefault(e => e.Contains("User Id"))?.Split("=")[1];
+                                        TargetPasswordBox.Password = targetConnectionStringSplit.SingleOrDefault(e => e.Contains("Password"))?.Split("=")[1];
+                                        TargetDatabaseCombo.Text = targetConnectionStringSplit.SingleOrDefault(e => e.Contains("Database"))?.Split("=")[1];
+
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show("No existing configuration found.", "Error",
+                                            MessageBoxButton.OK, MessageBoxImage.Error);
+                                    }
+                                }
+                            }
+
+
                         }
                         else
                         {

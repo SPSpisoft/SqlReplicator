@@ -82,13 +82,13 @@
 
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Button x:Name="Step1Button" Content="Base Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
+                    <Button x:Name="Step1Button" Cursor="Hand" Content="Base Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
                     <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                    <Button x:Name="Step2Button" Content="Source Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
+                    <Button x:Name="Step2Button" Cursor="Hand" Content="Source Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
                     <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                    <Button x:Name="Step3Button" Content="Target Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
+                    <Button x:Name="Step3Button" Cursor="Hand" Content="Target Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
                     <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
-                    <Button x:Name="Step4Button" Content="Configoration" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
+                    <Button x:Name="Step4Button" Cursor="Hand" Content="Configoration" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -167,7 +167,7 @@
 
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="80"/>
                             <!-- Label Column -->
                             <ColumnDefinition Width="*"/>
                             <!-- Username Input Column -->
@@ -227,7 +227,7 @@
 
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="80"/>
                             <!-- Label Column -->
                             <ColumnDefinition Width="*"/>
                             <!-- Username Input Column -->
@@ -286,15 +286,7 @@
                                Foreground="#666" Margin="0,0,0,20" TextWrapping="Wrap"/>
 
 
-                    <!-- Navigation Row -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <Button Content="Previous" Margin="0,0,10,0" Click="PreviousStep_Click"/>
-                        <Button x:Name="ConfigCompleteButton" Content="Go To Config" Background="#2196F3" Foreground="White" Padding="20,8" Click="GoToConfig_Click"/>
-                    </StackPanel>
-
-                    <!-- Configuration content will be added later -->
-
-                    <Grid Margin="20">
+                    <Grid Margin="1">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -302,23 +294,50 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Text="Base database connection string:" Margin="0,0,0,5"/>
-                        <TextBox Grid.Row="1" x:Name="BaseConnectionStringTextBox" 
-             Text="Server=.;Database=ReplicationBaseDB;Integrated Security=True;" 
-             Margin="0,0,0,10"/>
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" x:Name="ConfigButtonsPanel">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="407"/>
 
-                        <!-- Fixed height box for checklist -->
-                        <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="5" Background="#FFF">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" Height="160">
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Base database connection string :" Margin="0,3,0,0"/>
+                                <TextBox Grid.Row="0" IsReadOnly="true"  Grid.Column="1" x:Name="BaseConnectionStringTextBox" Margin="10,0,0,10"/>
+                            </Grid>
+                        </StackPanel>
+
+
+                            <!-- Fixed height box for checklist -->
+                        <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="5" Background="#FFF">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" Height="60">
                                 <StackPanel x:Name="ProgressStackPanel">
                                     <!-- Checklist steps will be added here -->
                                 </StackPanel>
                             </ScrollViewer>
                         </Border>
 
-                        <Button Grid.Row="3" Content="Install/Update and Start Sync Service" 
-            Click="ManageServiceButton_Click" Margin="0,10,0,0" Padding="10"/>
+                        <Button Grid.Row="2" Content="Install/Update and Start Sync Service" 
+                                  Click="ManageServiceButton_Click" Margin="0,10,0,0" Padding="10"/>
                     </Grid>
+                    
+                    <!-- Navigation Row -->
+                    <StackPanel Margin="0,10,0,0" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Content="Previous" Margin="0,0,10,0" Click="PreviousStep_Click"/>
+                        <Button x:Name="ConfigCompleteButton" Content="Go To Config" Background="#2196F3" Foreground="White" Padding="20,8" Click="GoToConfig_Click"/>
+
+                            <!--<StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="Collapsed" x:Name="ConfigButtonsPanel">-->
+                        <Button x:Name="DeleteConfigsButton" Content="Delete Configs" 
+                                Background="#F44336" Foreground="White" Padding="15,5" Margin="0,0"
+                                Click="DeleteConfigs_Click"/>
+                        <!--<Button x:Name="GoToConfigButton" Content="Go To Config" 
+                                Background="#2196F3" Foreground="White" Padding="15,5" Margin="10,0"
+                                Click="GoToConfig_Click"/>-->
+                        <!--</StackPanel>-->
+
+
+                    </StackPanel>
+
+                    <!-- Configuration content will be added later -->
 
                 </StackPanel>
             </Border>
@@ -346,14 +365,14 @@
                     <iconPacks:PackIconMaterial Kind="Information" Foreground="#666" Width="16" Height="16" Margin="0,0,5,0"/>
                     <TextBlock x:Name="StatusLabel" Text="Please configure your base database connection" Foreground="#666"/>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="Collapsed" x:Name="ConfigButtonsPanel">
+                <!--<StackPanel Grid.Column="1" Orientation="Horizontal" Visibility="Collapsed" x:Name="ConfigButtonsPanel">
                     <Button x:Name="DeleteConfigsButton" Content="Delete Configs" 
                             Background="#F44336" Foreground="White" Padding="15,5" Margin="10,0"
                             Click="DeleteConfigs_Click"/>
                     <Button x:Name="GoToConfigButton" Content="Go To Config" 
                             Background="#2196F3" Foreground="White" Padding="15,5" Margin="10,0"
                             Click="GoToConfig_Click"/>
-                </StackPanel>
+                </StackPanel>-->
             </Grid>
         </Border>
     </Grid>
