@@ -17,7 +17,7 @@ namespace SqlReplicator
 {
     public class ServiceInstallerManager
     {
-        private const string ServiceName = "SqlServerReplicationService"; // نام سرویس ویندوز
+        private const string MyServiceName = "SpsReplicationService"; // نام سرویس ویندوز
         private static string ServiceExePath; // مسیر فایل اجرایی سرویس
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace SqlReplicator
         {
             // مسیر فایل اجرایی سرویس (فرض می کنیم در همان مسیر برنامه WPF است)
             // شما باید مطمئن شوید که فایل SqlReplicationService.exe در کنار YourWpfApp.exe کپی شده است.
-            ServiceExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SqlReplicationService.exe");
+            ServiceExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SpsReplicationService.exe");
 
             if (!File.Exists(ServiceExePath))
             {
@@ -41,7 +41,7 @@ namespace SqlReplicator
             progress.Report(Tuple.Create("در حال بررسی وضعیت سرویس...", true));
 
             // مرحله 1: بررسی و حذف سرویس موجود (اگر وجود دارد)
-            ServiceController service = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == ServiceName);
+            ServiceController? service = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == MyServiceName);
 
             if (service != null)
             {
@@ -54,7 +54,7 @@ namespace SqlReplicator
                         service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
                     }
                     progress.Report(Tuple.Create("سرویس متوقف شد. در حال حذف سرویس...", true));
-                    if (!await UninstallService(progress)) return false;
+                    if (!await RemoveServiceIfExists(progress)) return false;
                 }
                 catch (Exception ex)
                 {
@@ -80,21 +80,8 @@ namespace SqlReplicator
 
             // مرحله 4: شروع سرویس
             progress.Report(Tuple.Create("در حال شروع سرویس...", true));
-            try
-            {
-                service = new ServiceController(ServiceName);
-                if (service.Status != ServiceControllerStatus.Running && service.Status != ServiceControllerStatus.StartPending)
-                {
-                    service.Start();
-                    service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
-                }
-                progress.Report(Tuple.Create("سرویس با موفقیت شروع شد.", true));
-            }
-            catch (Exception ex)
-            {
-                progress.Report(Tuple.Create($"خطا در شروع سرویس: {ex.Message}", false));
-                return false;
-            }
+
+            if (!await StartService(MyServiceName, progress)) return false;
 
             progress.Report(Tuple.Create("عملیات مدیریت سرویس با موفقیت به پایان رسید.", true));
             return true;
@@ -125,6 +112,43 @@ namespace SqlReplicator
             }
         }
 
+        private static async Task<bool> RemoveServiceIfExists(IProgress<Tuple<string, bool>> progress)
+        {
+            try
+            {
+                ServiceController? service =  ServiceController.GetServices().FirstOrDefault(s => s.ServiceName.Equals(MyServiceName, StringComparison.OrdinalIgnoreCase));
+
+                if (service != null)
+                {
+                    progress.Report(Tuple.Create($"⏳ توقف سرویس موجود: {MyServiceName}", true));
+
+                    if (service.Status != ServiceControllerStatus.Stopped)
+                    {
+                        service.Stop();
+                        service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(10));
+                    }
+
+                    progress.Report(Tuple.Create($"🗑 حذف سرویس قبلی: {MyServiceName}", true));
+
+                    await RunCommand("sc", $"delete {MyServiceName}", progress);
+
+                    // کمی صبر تا سیستم واقعاً سرویس را حذف کند
+                    await Task.Delay(1000);
+                }
+                else
+                {
+                    progress.Report(Tuple.Create("ℹ️ سرویس قبلاً نصب نشده است.", true));
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                progress.Report(Tuple.Create($"❌ خطا در حذف سرویس: {ex.Message}", false));
+                return false;
+            }
+        }
+
         /// <summary>
         /// نصب سرویس.
         /// </summary>
@@ -139,7 +163,10 @@ namespace SqlReplicator
                     return false;
                 }
 
-                await RunCommand(installUtilPath, $"\"{ServiceExePath}\"", progress);
+                //await RunCommand(installUtilPath, $"\"{ServiceExePath}\"", progress);
+                //string serviceName = "SqlReplicationService";
+                string scArgs = $"create {MyServiceName} binPath= \"{ServiceExePath}\" start= auto";
+                await RunCommand("sc", scArgs, progress);
                 progress.Report(Tuple.Create("سرویس با موفقیت نصب شد.", true));
                 return true;
             }
@@ -149,6 +176,44 @@ namespace SqlReplicator
                 return false;
             }
         }
+
+        private static async Task<bool> StartService(string serviceName, IProgress<Tuple<string, bool>> progress)
+        {
+            try
+            {
+                // بررسی اینکه سرویس وجود دارد
+                var service = ServiceController.GetServices()
+                    .FirstOrDefault(s => s.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+
+                if (service == null)
+                {
+                    progress.Report(Tuple.Create($"❌ سرویس \"{serviceName}\" یافت نشد. ممکن است نصب نشده باشد.", false));
+                    return false;
+                }
+
+                // اگر سرویس اجرا نشده، آن را اجرا کن
+                if (service.Status != ServiceControllerStatus.Running)
+                {
+                    progress.Report(Tuple.Create($"⏳ در حال اجرای سرویس \"{serviceName}\"...", true));
+
+                    await RunCommand("sc", $"start {serviceName}", progress);
+
+                    // کمی تأخیر بده تا وضعیت اجرا مشخص بشه
+                    service.Refresh();
+                    service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(10));
+                }
+
+                progress.Report(Tuple.Create($"✅ سرویس \"{serviceName}\" در حال اجرا است.", true));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                progress.Report(Tuple.Create($"❌ خطا در اجرای سرویس: {ex.Message}", false));
+                return false;
+            }
+        }
+
+
 
         /// <summary>
         /// پیدا کردن مسیر InstallUtil.exe.
@@ -181,37 +246,94 @@ namespace SqlReplicator
         /// <summary>
         /// اجرای یک دستور در خط فرمان.
         /// </summary>
-        private static async Task RunCommand(string command, string args, IProgress<Tuple<string, bool>> progress)
+        //private static async Task RunCommand(string command, string args, IProgress<Tuple<string, bool>> progress)
+        //{
+        //    using (Process process = new Process())
+        //    {
+        //        process.StartInfo.FileName = command;
+        //        process.StartInfo.Arguments = args;
+        //        process.StartInfo.UseShellExecute = false; // عدم استفاده از Shell برای اجرای مستقیم برنامه
+        //        process.StartInfo.RedirectStandardOutput = true;
+        //        process.StartInfo.RedirectStandardError = true;
+        //        process.StartInfo.CreateNoWindow = true; // پنجره سیاه را نشان نده
+
+        //        process.Start();
+
+        //        string output = await process.StandardOutput.ReadToEndAsync();
+        //        string error = await process.StandardError.ReadToEndAsync();
+
+        //        process.WaitForExit();
+
+        //        if (process.ExitCode != 0)
+        //        {
+        //            // اگر خطا رخ داده باشد، پیام خطا را گزارش کنید.
+        //            string errorMessage = string.IsNullOrEmpty(error) ? output : error;
+        //            throw new InvalidOperationException($"خطا در اجرای دستور: {command} {args}\nپیام: {errorMessage}");
+        //        }
+        //        else
+        //        {
+        //            // می توانید خروجی را برای اطلاعات بیشتر گزارش کنید.
+        //            // progress.Report(Tuple.Create($"خروجی دستور: {output}", true));
+        //        }
+        //    }
+        //}
+
+        private static async Task<bool> RunCommand(string fileName, string arguments, IProgress<Tuple<string, bool>> progress)
         {
-            using (Process process = new Process())
+            try
             {
-                process.StartInfo.FileName = command;
-                process.StartInfo.Arguments = args;
-                process.StartInfo.UseShellExecute = false; // عدم استفاده از Shell برای اجرای مستقیم برنامه
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.RedirectStandardError = true;
-                process.StartInfo.CreateNoWindow = true; // پنجره سیاه را نشان نده
+                progress.Report(Tuple.Create($"💬 اجرای دستور: {fileName} {arguments}", true));
+
+                var tcs = new TaskCompletionSource<bool>();
+
+                var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = fileName,
+                        Arguments = arguments,
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        StandardOutputEncoding = Encoding.UTF8,
+                        StandardErrorEncoding = Encoding.UTF8
+                    },
+                    EnableRaisingEvents = true
+                };
+
+                // گرفتن خروجی‌ها
+                process.OutputDataReceived += (sender, e) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(e.Data))
+                        progress.Report(Tuple.Create(e.Data, true));
+                };
+
+                process.ErrorDataReceived += (sender, e) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(e.Data))
+                        progress.Report(Tuple.Create("⚠️ " + e.Data, false));
+                };
+
+                process.Exited += (sender, e) =>
+                {
+                    tcs.SetResult(process.ExitCode == 0);
+                    process.Dispose();
+                };
 
                 process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
 
-                string output = await process.StandardOutput.ReadToEndAsync();
-                string error = await process.StandardError.ReadToEndAsync();
-
-                process.WaitForExit();
-
-                if (process.ExitCode != 0)
-                {
-                    // اگر خطا رخ داده باشد، پیام خطا را گزارش کنید.
-                    string errorMessage = string.IsNullOrEmpty(error) ? output : error;
-                    throw new InvalidOperationException($"خطا در اجرای دستور: {command} {args}\nپیام: {errorMessage}");
-                }
-                else
-                {
-                    // می توانید خروجی را برای اطلاعات بیشتر گزارش کنید.
-                    // progress.Report(Tuple.Create($"خروجی دستور: {output}", true));
-                }
+                return await tcs.Task;
+            }
+            catch (Exception ex)
+            {
+                progress.Report(Tuple.Create($"❌ خطا در اجرای دستور: {ex.Message}", false));
+                return false;
             }
         }
+
 
         /// <summary>
         /// به روز رسانی فایل App.config سرویس برای ذخیره رشته اتصال دیتابیس پایه.
@@ -236,14 +358,14 @@ namespace SqlReplicator
                     );
                 }
 
-                XElement appSettings = doc.Element("configuration")?.Element("appSettings");
+                XElement? appSettings = doc.Element("configuration")?.Element("appSettings");
                 if (appSettings == null)
                 {
                     appSettings = new XElement("appSettings");
                     doc.Element("configuration")?.Add(appSettings);
                 }
 
-                XElement setting = appSettings.Elements("add")
+                XElement? setting = appSettings.Elements("add")
                                               .FirstOrDefault(e => e.Attribute("key")?.Value == "BaseDatabaseConnection");
 
                 if (setting != null)

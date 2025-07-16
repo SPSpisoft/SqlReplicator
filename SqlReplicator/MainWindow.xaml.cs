@@ -12,6 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Threading;
+using MahApps.Metro.IconPacks;
 
 namespace SqlReplicator
 {
@@ -231,6 +232,10 @@ namespace SqlReplicator
 
         private async void TestConnection_Click(object sender, RoutedEventArgs e)
         {
+            //BaseStatusIcon.Foreground = new SolidColorBrush(Colors.Gray);
+            //SourceStatusIcon.Foreground = new SolidColorBrush(Colors.Gray);
+            //TargetStatusIcon.Foreground = new SolidColorBrush(Colors.Gray);
+
             var button = sender as Button;
             var step = button?.Tag?.ToString();
 
@@ -307,22 +312,27 @@ namespace SqlReplicator
                     switch (step)
                     {
                         case "Base":
-                            BaseStatusIcon.Visibility = Visibility.Visible;
+                            BaseStatusIcon.Foreground = new SolidColorBrush(Colors.Red);
+                            AnimateIcon(BaseStatusIcon, Colors.Green);
                             BaseNextButton.IsEnabled = true;
                             break;
                         case "Source":
-                            SourceStatusIcon.Visibility = Visibility.Visible;
+                            SourceStatusIcon.Foreground = new SolidColorBrush(Colors.Red);
+                            AnimateIcon(SourceStatusIcon, Colors.Green);
                             SourceNextButton.IsEnabled = true;
                             break;
                         case "Target":
-                            TargetStatusIcon.Visibility = Visibility.Visible;
+                            TargetStatusIcon.Foreground = new SolidColorBrush(Colors.Red);
+                            AnimateIcon(TargetStatusIcon, Colors.Green);
                             TargetCompleteButton.IsEnabled = true;
                             break;
                     }
 
                     StatusLabel.Text = $"{step} database connection successful!";
-                    MessageBox.Show($"Connection to {step.ToLower()} database successful!", "Success",
-                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    //MessageBox.Show($"Connection to {step.ToLower()} database successful!", "Success",
+                    //    MessageBoxButton.OK, MessageBoxImage.Information);
+
+
                 }
             }
             catch (Exception ex)
@@ -337,6 +347,19 @@ namespace SqlReplicator
                 button.Content = "Connect";
             }
         }
+
+        void AnimateIcon(PackIconMaterial icon, Color toColor, int durationMs = 1000)
+        {
+            var colorAnim = new ColorAnimation
+            {
+                To = toColor,
+                Duration = TimeSpan.FromMilliseconds(durationMs),
+            };
+
+            icon.Foreground = new SolidColorBrush(Colors.Red);
+            (icon.Foreground as SolidColorBrush)?.BeginAnimation(SolidColorBrush.ColorProperty, colorAnim);
+        }
+
 
         private async void BaseDatabaseCombo_DropDownClosed(object sender, EventArgs e)
         {
@@ -370,7 +393,7 @@ namespace SqlReplicator
                 var baseConnectionString = connectionStrings["Base"];
                 if (string.IsNullOrEmpty(baseConnectionString) || string.IsNullOrEmpty(BaseDatabaseCombo.Text))
                 {
-                    ConfigButtonsPanel.Visibility = Visibility.Collapsed;
+                    //ConfigButtonsPanel.Visibility = Visibility.Collapsed;
                     StatusLabel.Text = "Please select a database.";
                     return;
                 }
@@ -385,7 +408,7 @@ namespace SqlReplicator
                         var configCount = Convert.ToInt32(await command_count.ExecuteScalarAsync());
                         if (configCount > 0)
                         {
-                            ConfigButtonsPanel.Visibility = Visibility.Visible;
+                            //ConfigButtonsPanel.Visibility = Visibility.Visible;
                             StatusLabel.Text = "Existing configuration found. You can view or delete it.";
 
 
@@ -402,22 +425,83 @@ namespace SqlReplicator
                                 {
                                     if (await reader.ReadAsync())
                                     {
+                                        /// --- SORCE ---------------------------------------
                                         var sourceConnectionString = reader.GetString(0);
-                                        var targetConnectionString = reader.GetString(1);
-
                                         var sourceConnectionStringSplit = sourceConnectionString.Split(";");
-                                        var targetConnectionStringSplit = targetConnectionString.Split(";");
 
-                                        //SourceServerCombo.Text = sourceConnectionStringSplit.SingleOrDefault(e => e.Contains("Server"))?.Split("=")[1];
                                         SourceUsernameBox.Text = sourceConnectionStringSplit.SingleOrDefault(e => e.Contains("User"))?.Split("=")[1];
                                         SourcePasswordBox.Password = sourceConnectionStringSplit.SingleOrDefault(e => e.Contains("Password"))?.Split("=")[1];
-                                        SourceDatabaseCombo.Text = sourceConnectionStringSplit.SingleOrDefault(e => e.Contains("Database"))?.Split("=")[1];
 
-                                        //TargetServerCombo.Text = targetConnectionStringSplit.SingleOrDefault(e => e.Contains("Server"))?.Split("=")[1];
-                                        TargetUsernameBox.Text = targetConnectionStringSplit.SingleOrDefault(e => e.Contains("User Id"))?.Split("=")[1];
+                                        var serverValue = sourceConnectionStringSplit.FirstOrDefault(e => e.Contains("Server"))?.Split("=")[1];
+
+                                        foreach (var item in SourceServerCombo.Items)
+                                        {
+                                            string? sourceComboConnectionString = GetComboItemText(item);
+
+                                            if (sourceComboConnectionString == serverValue)
+                                            {
+                                                SourceServerCombo.SelectedItem = item;
+                                                break;
+                                            }
+                                        }
+
+                                        System.Windows.Controls.Button dummyButton = new System.Windows.Controls.Button();
+                                        dummyButton.Tag = "Source";
+                                        TestConnection_Click(dummyButton, null);
+
+                                        await Task.Delay(1000);
+
+                                        var databaseValue = sourceConnectionStringSplit.FirstOrDefault(e => e.Contains("Database"))?.Split("=")[1];
+
+                                        foreach (var item in SourceDatabaseCombo.Items)
+                                        {
+                                            string? sourceDatabaseComboString = GetComboItemText(item);
+
+                                            if (sourceDatabaseComboString == databaseValue)
+                                            {
+                                                SourceDatabaseCombo.SelectedItem = item;
+                                                break;
+                                            }
+                                        }
+
+                                        /// --- TARGRT ---------------------------------------
+                                        var targetConnectionString = reader.GetString(1);
+                                        var targetConnectionStringSplit = targetConnectionString.Split(";");
+
+                                        TargetUsernameBox.Text = targetConnectionStringSplit.SingleOrDefault(e => e.Contains("User"))?.Split("=")[1];
                                         TargetPasswordBox.Password = targetConnectionStringSplit.SingleOrDefault(e => e.Contains("Password"))?.Split("=")[1];
-                                        TargetDatabaseCombo.Text = targetConnectionStringSplit.SingleOrDefault(e => e.Contains("Database"))?.Split("=")[1];
 
+                                        var serverTargetValue = targetConnectionStringSplit.FirstOrDefault(e => e.Contains("Server"))?.Split("=")[1];
+
+                                        foreach (var item in TargetServerCombo.Items)
+                                        {
+                                            string? targetComboConnectionString = GetComboItemText(item);
+
+                                            if (targetComboConnectionString == serverTargetValue)
+                                            {
+                                                TargetServerCombo.SelectedItem = item;
+                                                break;
+                                            }
+                                        }
+
+                                        System.Windows.Controls.Button dummyTargetButton = new System.Windows.Controls.Button();
+                                        dummyTargetButton.Tag = "Target";
+                                        TestConnection_Click(dummyTargetButton, null);
+
+                                        await Task.Delay(1000);
+
+                                        var databaseTargetValue = targetConnectionStringSplit.FirstOrDefault(e => e.Contains("Database"))?.Split("=")[1];
+
+                                        foreach (var item in TargetDatabaseCombo.Items)
+                                        {
+                                            string? targetDatabaseComboString = GetComboItemText(item);
+
+                                            if (targetDatabaseComboString == databaseTargetValue)
+                                            {
+                                                TargetDatabaseCombo.SelectedItem = item;
+                                                break;
+                                            }
+                                        }
                                     }
                                     else
                                     {
@@ -431,7 +515,7 @@ namespace SqlReplicator
                         }
                         else
                         {
-                            ConfigButtonsPanel.Visibility = Visibility.Collapsed;
+                            //ConfigButtonsPanel.Visibility = Visibility.Collapsed;
                             StatusLabel.Text = "No existing configuration found. Please complete the setup.";
                         }
                     }
@@ -440,10 +524,21 @@ namespace SqlReplicator
             catch
             {
                 // If table doesn't exist or any other error, hide the buttons
-                ConfigButtonsPanel.Visibility = Visibility.Collapsed;
+                //ConfigButtonsPanel.Visibility = Visibility.Collapsed;
                 StatusLabel.Text = "Please complete the setup.";
             }
         }
+
+        string? GetComboItemText(object? item)
+        {
+            return item switch
+            {
+                ComboBoxItem cbItem => cbItem.Content?.ToString(),
+                string str => str,
+                _ => item?.ToString()
+            };
+        }
+
 
         private void NextStep_Click(object sender, RoutedEventArgs e)
         {
@@ -506,6 +601,8 @@ namespace SqlReplicator
 
                 if (!string.IsNullOrWhiteSpace(TargetDatabaseCombo.Text))
                     targetConnectionString += $"Database={TargetDatabaseCombo.Text};";
+
+                //BaseConnectionStringTextBox.Text = baseConnectionString;
 
                 // Save connection strings to database
                 using (var connection = new SqlConnection(baseConnectionString))
@@ -662,7 +759,7 @@ namespace SqlReplicator
                                     MessageBoxButton.OK, MessageBoxImage.Information);
 
                                 // Hide config buttons after successful deletion
-                                ConfigButtonsPanel.Visibility = Visibility.Collapsed;
+                                //ConfigButtonsPanel.Visibility = Visibility.Collapsed;
                             }
                             catch (Exception ex)
                             {
@@ -725,10 +822,10 @@ namespace SqlReplicator
             UpdateStepButtons();
         }
 
-        private void UpdateConfigButtonState()
-        {
-            Step4Button.IsEnabled = ConfigButtonsPanel.Visibility == Visibility.Visible;
-        }
+        //private void UpdateConfigButtonState()
+        //{
+        //    Step4Button.IsEnabled = ConfigButtonsPanel.Visibility == Visibility.Visible;
+        //}
 
         //********************************** GENERATOR *********************************
 
@@ -748,7 +845,8 @@ namespace SqlReplicator
             }
 
             // Get the base database connection string from the TextBox
-            string baseConnectionString = BaseConnectionStringTextBox.Text;
+            string baseConnectionString = connectionStrings["Base"];
+
             if (string.IsNullOrWhiteSpace(baseConnectionString))
             {
                 DisplayProgress("Base database connection string cannot be empty.", false);

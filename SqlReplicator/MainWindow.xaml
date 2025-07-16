@@ -83,11 +83,11 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <Button x:Name="Step1Button" Cursor="Hand" Content="Base Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
-                    <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
+                    <iconPacks:PackIconMaterial x:Name="BaseStatusIcon" Kind="ChevronRight" VerticalAlignment="Center" Foreground="#ddd" Margin="10,0"/>
                     <Button x:Name="Step2Button" Cursor="Hand" Content="Source Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
-                    <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
+                    <iconPacks:PackIconMaterial x:Name="SourceStatusIcon"  Kind="ChevronRight" VerticalAlignment="Center" Foreground="#ddd" Margin="10,0"/>
                     <Button x:Name="Step3Button" Cursor="Hand" Content="Target Database" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
-                    <iconPacks:PackIconMaterial Kind="ChevronRight" VerticalAlignment="Center" Foreground="#CCC" Margin="10,0"/>
+                    <iconPacks:PackIconMaterial x:Name="TargetStatusIcon"  Kind="ChevronRight" VerticalAlignment="Center" Foreground="#ddd" Margin="10,0"/>
                     <Button x:Name="Step4Button" Cursor="Hand" Content="Configoration" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
                 </StackPanel>
             </Grid>
@@ -147,7 +147,7 @@
 
                         <!-- Next/Status Row -->
                         <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <iconPacks:PackIconMaterial x:Name="BaseStatusIcon" Kind="CheckCircle" Foreground="Green" Width="20" Height="20" Visibility="Collapsed" Margin="0,0,10,0"/>
+                            <!--<iconPacks:PackIconMaterial x:Name="BaseStatusIcon" Kind="CheckCircle" Foreground="Green" Width="20" Height="20" Visibility="Collapsed" Margin="0,0,10,0"/>-->
                             <Button x:Name="BaseNextButton" Content="Next Step" Background="#2196F3" Foreground="White" Padding="20,8" IsEnabled="False" Click="NextStep_Click"/>
                         </StackPanel>
                     </Grid>
@@ -207,7 +207,7 @@
                         <!-- Previous/Next/Status Row -->
                         <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Button Content="Previous" Margin="0,0,10,0" Click="PreviousStep_Click"/>
-                            <iconPacks:PackIconMaterial x:Name="SourceStatusIcon" Kind="CheckCircle" Foreground="Green" Width="20" Height="20" Visibility="Collapsed" Margin="0,0,10,0"/>
+                            <!--<iconPacks:PackIconMaterial x:Name="SourceStatusIcon" Kind="CheckCircle" Foreground="Green" Width="20" Height="20" Visibility="Collapsed" Margin="0,0,10,0"/>-->
                             <Button x:Name="SourceNextButton" Content="Next Step" Background="#2196F3" Foreground="White" Padding="20,8" IsEnabled="False" Click="NextStep_Click"/>
                         </StackPanel>
                     </Grid>
@@ -267,7 +267,7 @@
                         <!-- Previous/Complete/Status Row -->
                         <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Button Content="Previous" Margin="0,0,10,0" Click="PreviousStep_Click"/>
-                            <iconPacks:PackIconMaterial x:Name="TargetStatusIcon" Kind="CheckCircle" Foreground="Green" Width="20" Height="20" Visibility="Collapsed" Margin="0,0,10,0"/>
+                            <!--<iconPacks:PackIconMaterial x:Name="TargetStatusIcon" Kind="CheckCircle" Foreground="Green" Width="20" Height="20" Visibility="Collapsed" Margin="0,0,10,0"/>-->
                             <Button x:Name="TargetCompleteButton" Content="Complete Setup" Background="#4CAF50" Foreground="White" Padding="20,8" IsEnabled="False" Click="CompleteSetup_Click"/>
                         </StackPanel>
                     </Grid>
@@ -294,7 +294,7 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" x:Name="ConfigButtonsPanel">
+                        <!--<StackPanel Grid.Row="0" Orientation="Horizontal" x:Name="ConfigButtonsPanel" Visibility="Hidden">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -304,12 +304,12 @@
                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Base database connection string :" Margin="0,3,0,0"/>
                                 <TextBox Grid.Row="0" IsReadOnly="true"  Grid.Column="1" x:Name="BaseConnectionStringTextBox" Margin="10,0,0,10"/>
                             </Grid>
-                        </StackPanel>
+                        </StackPanel>-->
 
 
                             <!-- Fixed height box for checklist -->
                         <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="5" Background="#FFF">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" Height="60">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="140">
                                 <StackPanel x:Name="ProgressStackPanel">
                                     <!-- Checklist steps will be added here -->
                                 </StackPanel>
