@@ -11,46 +11,64 @@ namespace SqlReplicator
         private readonly string _sourceConnectionString;
         private readonly string _targetConnectionString;
         private readonly List<TableInfo> _selectedTables;
+        private readonly string _listenerType;
 
-        public SqlServiceGenerator(string sourceConnectionString, string targetConnectionString, List<TableInfo> selectedTables)
+        public SqlServiceGenerator(string sourceConnectionString, string targetConnectionString, List<TableInfo> selectedTables, string listenerType)
         {
             _sourceConnectionString = sourceConnectionString ?? throw new ArgumentNullException(nameof(sourceConnectionString));
             _targetConnectionString = targetConnectionString ?? throw new ArgumentNullException(nameof(targetConnectionString));
             _selectedTables = selectedTables ?? throw new ArgumentNullException(nameof(selectedTables));
+            _listenerType = listenerType ?? "Trigger";
         }
 
         public async Task GenerateServices()
         {
-            using (var connection = new SqlConnection(_sourceConnectionString))
+            if (_listenerType == "Trigger")
             {
-                await connection.OpenAsync();
-                using (var transaction = connection.BeginTransaction())
+                using (var connection = new SqlConnection(_sourceConnectionString))
                 {
-                    try
+                    await connection.OpenAsync();
+                    using (var transaction = connection.BeginTransaction())
                     {
-                        // Create change tracking table
-                        await CreateChangeTrackingTable(connection, transaction);
-
-                        // Generate triggers for each table
-                        foreach (var table in _selectedTables)
+                        try
                         {
-                            await GenerateTableTriggers(connection, transaction, table);
+                            // Create change tracking table
+                            await CreateChangeTrackingTable(connection, transaction);
+
+                            // Generate triggers for each table
+                            foreach (var table in _selectedTables)
+                            {
+                                await GenerateTableTriggers(connection, transaction, table);
+                            }
+
+                            // Generate extraction procedures
+                            await GenerateExtractionProcedures(connection, transaction);
+
+                            // Generate application procedures
+                            await GenerateApplicationProcedures(connection, transaction);
+
+                            transaction.Commit();
                         }
-
-                        // Generate extraction procedures
-                        await GenerateExtractionProcedures(connection, transaction);
-
-                        // Generate application procedures
-                        await GenerateApplicationProcedures(connection, transaction);
-
-                        transaction.Commit();
-                    }
-                    catch (Exception)
-                    {
-                        transaction.Rollback();
-                        throw;
+                        catch (Exception)
+                        {
+                            transaction.Rollback();
+                            throw;
+                        }
                     }
                 }
+            }
+            else if (_listenerType == "Polling")
+            {
+                // TODO: Implement Polling logic (no triggers, periodic data comparison)
+                throw new NotImplementedException("Polling listener is not implemented yet.");
+            }
+            else if (_listenerType == "CDC" || _listenerType == "Change Tracking")
+            {
+                throw new NotImplementedException($"{_listenerType} listener is not implemented yet.");
+            }
+            else
+            {
+                throw new ArgumentException($"Unknown listener type: {_listenerType}");
             }
         }
 

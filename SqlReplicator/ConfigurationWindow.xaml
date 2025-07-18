@@ -26,6 +26,22 @@
             </StackPanel>
         </Border>
 
+        <!-- Listener Type Selection -->
+        <Border Style="{StaticResource DatabaseCardStyle}" Margin="0,0,0,20" Grid.Row="1">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                    <iconPacks:PackIconMaterial Kind="EarHearing" Width="24" Height="24" Foreground="#3F51B5"/>
+                    <TextBlock Text="Listener Type" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="Select the method for listening to source database changes:" Foreground="#666" Margin="0,0,0,15" TextWrapping="Wrap"/>
+                <ComboBox x:Name="ListenerTypeComboBox" Width="250" SelectedIndex="0">
+                    <ComboBoxItem Content="Trigger"/>
+                    <ComboBoxItem Content="CDC"/>
+                    <ComboBoxItem Content="Change Tracking"/>
+                    <ComboBoxItem Content="Polling"/>
+                </ComboBox>
+            </StackPanel>
+        </Border>
         <!-- Main Content -->
         <Grid Grid.Row="1" Margin="20">
             <Grid.RowDefinitions>
@@ -277,13 +293,11 @@
             </Grid>
         </Grid>
 
-        <!-- Footer -->
-        <Border Grid.Row="2" Background="White" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="20,0">
-                <Button x:Name="CancelButton" Content="Cancel" Padding="20,10" Margin="0,0,10,0" Click="Cancel_Click"/>
-                <Button x:Name="SaveButton" Content="Save Configuration" Background="#2196F3" Foreground="White" 
-                        Padding="20,10" Click="SaveConfig_Click"/>
-            </StackPanel>
-        </Border>
+        <!-- Footer Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,20,0">
+            <Button x:Name="GenerateServiceButton" Content="Generate Service" Background="#4CAF50" Foreground="White" Padding="20,8" Margin="0,0,10,0" Click="GenerateServiceButton_Click"/>
+            <Button x:Name="SaveConfigButton" Content="Save Configuration" Background="#2196F3" Foreground="White" Padding="20,8" Margin="0,0,10,0" Click="SaveConfig_Click"/>
+            <Button x:Name="CancelButton" Content="Cancel" Background="#F44336" Foreground="White" Padding="20,8" Click="Cancel_Click"/>
+        </StackPanel>
     </Grid>
 </mah:MetroWindow>
