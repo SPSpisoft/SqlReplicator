@@ -280,10 +280,11 @@
                                                 <DataGridTemplateColumn Header="Source Table" Width="150">
                                                     <DataGridTemplateColumn.CellTemplate>
                                                         <DataTemplate>
-                                                            <ComboBox ItemsSource="{Binding _sourceTables}"
+                                                            <ComboBox ItemsSource="{Binding DataContext._sourceTables, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                       DisplayMemberPath="TableName"
                                                                       SelectedValue="{Binding SourceTableName}"
-                                                                      SelectedValuePath="TableName"/>
+                                                                      SelectedValuePath="TableName"
+                                                                      MouseRightButtonUp="TestComboBox_MouseRightButtonUp"/>
                                                         </DataTemplate>
                                                     </DataGridTemplateColumn.CellTemplate>
                                                 </DataGridTemplateColumn>
@@ -294,7 +295,7 @@
                                                                 <ComboBox.ItemsSource>
                                                                     <MultiBinding Converter="{StaticResource SourceFieldsForTableConverter}">
                                                                         <Binding Path="SourceTableName"/>
-                                                                        <Binding Path="DataContext._sourceTables" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                        <Binding Path="_sourceTables"/>
                                                                     </MultiBinding>
                                                                 </ComboBox.ItemsSource>
                                                                 <ComboBox.SelectedValue>
