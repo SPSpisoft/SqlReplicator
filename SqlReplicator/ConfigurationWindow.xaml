@@ -274,9 +274,15 @@
                                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                                         <DataGrid x:Name="FieldMappingDataGrid" AutoGenerateColumns="False" CanUserAddRows="False">
                                             <DataGrid.Columns>
-                                                <DataGridCheckBoxColumn Header="Select" Binding="{Binding IsSelected}" Width="60"/>
-                                                <DataGridTextColumn Header="Target Field" Binding="{Binding TargetField}" Width="150"/>
-                                                <DataGridTextColumn Header="Target Data Type" Binding="{Binding TargetDataType}" Width="100"/>
+                                                <DataGridTemplateColumn Header="Select" Width="60">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                                <DataGridTextColumn Header="Field" Binding="{Binding TargetField}" Width="150"/>
+                                                <DataGridTextColumn Header="Type" Binding="{Binding TargetDataType}" Width="100"/>
                                                 <DataGridTemplateColumn Header="Source Table" Width="150">
                                                     <DataGridTemplateColumn.CellTemplate>
                                                         <DataTemplate>
@@ -284,23 +290,26 @@
                                                                       DisplayMemberPath="TableName"
                                                                       SelectedValue="{Binding SourceTableName}"
                                                                       SelectedValuePath="TableName"
-                                                                      MouseRightButtonUp="TestComboBox_MouseRightButtonUp"/>
+                                                                      MouseRightButtonUp="TestComboBox_MouseRightButtonUp"
+                                                                      IsEnabled="{Binding IsSelected}"/>
                                                         </DataTemplate>
                                                     </DataGridTemplateColumn.CellTemplate>
                                                 </DataGridTemplateColumn>
                                                 <DataGridTemplateColumn Header="Source Field" Width="150">
                                                     <DataGridTemplateColumn.CellTemplate>
                                                         <DataTemplate>
-                                                            <ComboBox>
+                                                            <ComboBox
+                                                                SelectedValue="{Binding SourceField, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                SelectedValuePath="."
+                                                                DisplayMemberPath="."
+                                                                IsEnabled="{Binding IsSelected}"
+                                                            >
                                                                 <ComboBox.ItemsSource>
                                                                     <MultiBinding Converter="{StaticResource SourceFieldsForTableConverter}">
                                                                         <Binding Path="SourceTableName"/>
-                                                                        <Binding Path="_sourceTables"/>
+                                                                        <Binding Path="DataContext._sourceTables" RelativeSource="{RelativeSource AncestorType=Window}"/>
                                                                     </MultiBinding>
                                                                 </ComboBox.ItemsSource>
-                                                                <ComboBox.SelectedValue>
-                                                                    <Binding Path="SourceField"/>
-                                                                </ComboBox.SelectedValue>
                                                             </ComboBox>
                                                         </DataTemplate>
                                                     </DataGridTemplateColumn.CellTemplate>
