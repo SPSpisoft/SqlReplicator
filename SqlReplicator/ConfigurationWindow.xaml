@@ -332,9 +332,5 @@
             <Button x:Name="SaveConfigButton" Content="Save Configuration" Background="#2196F3" Foreground="White" Padding="20,8" Margin="0,0,10,0" Click="SaveConfig_Click"/>
             <Button x:Name="CancelButton" Content="Cancel" Background="#F44336" Foreground="White" Padding="20,8" Click="Cancel_Click"/>
         </StackPanel>
-        <!-- ComboBox تستی برای نمایش لیست جداول مبدا و تست راست‌کلیک -->
-        <ComboBox x:Name="TestComboBox"
-                  Width="180" Height="30" Margin="20,10,20,10"
-                  MouseRightButtonUp="TestComboBox_MouseRightButtonUp"/>
     </Grid>
 </mah:MetroWindow>
