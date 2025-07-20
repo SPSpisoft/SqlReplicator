@@ -23,6 +23,10 @@ namespace SqlReplicator
 
         public async Task GenerateServices()
         {
+            // 1. پاک کردن setup قبلی
+            await CleanupPreviousSetup();
+            
+            // 2. جنریت setup جدید
             if (_listenerType == "Trigger")
             {
                 using (var connection = new SqlConnection(_sourceConnectionString))
@@ -56,6 +60,9 @@ namespace SqlReplicator
                         }
                     }
                 }
+
+                // 3. کپی اولیه داده‌ها
+                await PerformInitialDataSync();
             }
             else if (_listenerType == "Polling")
             {
@@ -69,6 +76,122 @@ namespace SqlReplicator
             else
             {
                 throw new ArgumentException($"Unknown listener type: {_listenerType}");
+            }
+        }
+
+        public async Task CleanupPreviousSetup()
+        {
+            using (var connection = new SqlConnection(_sourceConnectionString))
+            {
+                await connection.OpenAsync();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // 1. حذف Triggerهای قدیمی
+                        foreach (var table in _selectedTables)
+                        {
+                            await DropTableTriggers(connection, transaction, table);
+                        }
+
+                        // 2. حذف Stored Procedureهای قدیمی
+                        await DropStoredProcedures(connection, transaction);
+
+                        // 3. پاک کردن جدول ChangeTracking
+                        await CleanChangeTrackingTable(connection, transaction);
+
+                        transaction.Commit();
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
+        private async Task DropTableTriggers(SqlConnection connection, SqlTransaction transaction, TableInfo table)
+        {
+            var triggers = new[] { "Insert", "Update", "Delete" };
+            foreach (var triggerType in triggers)
+            {
+                var dropTrigger = new SqlCommand($@"
+                    IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'TR_{table.TableName}_{triggerType}')
+                        DROP TRIGGER [dbo].[TR_{table.TableName}_{triggerType}]", connection, transaction);
+                await dropTrigger.ExecuteNonQueryAsync();
+            }
+        }
+
+        private async Task DropStoredProcedures(SqlConnection connection, SqlTransaction transaction)
+        {
+            var procedures = new[] { "GetPendingChanges", "ApplyChanges" };
+            foreach (var procName in procedures)
+            {
+                var dropProc = new SqlCommand($@"
+                    IF EXISTS (SELECT * FROM sys.procedures WHERE name = '{procName}')
+                        DROP PROCEDURE [dbo].[{procName}]", connection, transaction);
+                await dropProc.ExecuteNonQueryAsync();
+            }
+        }
+
+        private async Task CleanChangeTrackingTable(SqlConnection connection, SqlTransaction transaction)
+        {
+            var cleanTable = new SqlCommand(@"
+                IF EXISTS (SELECT * FROM sys.tables WHERE name = 'ChangeTracking')
+                    TRUNCATE TABLE ChangeTracking", connection, transaction);
+            await cleanTable.ExecuteNonQueryAsync();
+        }
+
+        private async Task PerformInitialDataSync()
+        {
+            foreach (var table in _selectedTables)
+            {
+                await CopyTableData(table);
+            }
+        }
+
+        private async Task CopyTableData(TableInfo table)
+        {
+            // اتصال به دیتابیس مبدا
+            using (var sourceConnection = new SqlConnection(_sourceConnectionString))
+            {
+                await sourceConnection.OpenAsync();
+                
+                // اتصال به دیتابیس مقصد
+                using (var targetConnection = new SqlConnection(_targetConnectionString))
+                {
+                    await targetConnection.OpenAsync();
+                    
+                    // پاک کردن داده‌های موجود در جدول مقصد
+                    var clearTargetTable = new SqlCommand($"DELETE FROM [{table.TableName}]", targetConnection);
+                    await clearTargetTable.ExecuteNonQueryAsync();
+                    
+                    // خواندن داده‌ها از مبدا
+                    var selectFields = string.Join(", ", table.Fields.Select(f => $"[{f.FieldName}]"));
+                    var selectCommand = new SqlCommand($"SELECT {selectFields} FROM [{table.TableName}]", sourceConnection);
+                    
+                    using (var reader = await selectCommand.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            // ساخت INSERT statement برای مقصد
+                            var insertFields = string.Join(", ", table.Fields.Select(f => $"[{f.FieldName}]"));
+                            var insertValues = string.Join(", ", table.Fields.Select(f => $"@{f.FieldName}"));
+                            var insertCommand = new SqlCommand($"INSERT INTO [{table.TableName}] ({insertFields}) VALUES ({insertValues})", targetConnection);
+                            
+                            // اضافه کردن پارامترها
+                            for (int i = 0; i < table.Fields.Count; i++)
+                            {
+                                var field = table.Fields[i];
+                                var value = reader.IsDBNull(i) ? DBNull.Value : reader.GetValue(i);
+                                insertCommand.Parameters.AddWithValue($"@{field.FieldName}", value);
+                            }
+                            
+                            await insertCommand.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
             }
         }
 
