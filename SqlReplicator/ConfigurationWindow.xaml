@@ -288,10 +288,10 @@
                                                         <DataTemplate>
                                                             <ComboBox ItemsSource="{Binding DataContext._sourceTables, RelativeSource={RelativeSource AncestorType=Window}}"
                                                                       DisplayMemberPath="TableName"
-                                                                      SelectedValue="{Binding SourceTableName}"
+                                                                      SelectedValue="{Binding SourceTableName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                       SelectedValuePath="TableName"
-                                                                      MouseRightButtonUp="TestComboBox_MouseRightButtonUp"
-                                                                      IsEnabled="{Binding IsSelected}"/>
+                                                                      IsEnabled="{Binding IsSelected}"
+                                                                      SelectionChanged="SourceTableComboBox_SelectionChanged"/>
                                                         </DataTemplate>
                                                     </DataGridTemplateColumn.CellTemplate>
                                                 </DataGridTemplateColumn>
