@@ -330,6 +330,7 @@
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,20,0">
             <Button x:Name="GenerateServiceButton" Content="Generate Service" Background="#4CAF50" Foreground="White" Padding="20,8" Margin="0,0,10,0" Click="GenerateServiceButton_Click"/>
             <Button x:Name="SaveConfigButton" Content="Save Configuration" Background="#2196F3" Foreground="White" Padding="20,8" Margin="0,0,10,0" Click="SaveConfig_Click"/>
+            <Button x:Name="DeleteConfigButton" Content="حذف کانفیگ" Background="#FF9800" Foreground="White" Padding="20,8" Margin="0,0,10,0" Click="DeleteConfigButton_Click"/>
             <Button x:Name="CancelButton" Content="Cancel" Background="#F44336" Foreground="White" Padding="20,8" Click="Cancel_Click"/>
         </StackPanel>
     </Grid>
