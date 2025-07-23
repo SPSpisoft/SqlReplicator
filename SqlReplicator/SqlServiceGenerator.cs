@@ -10,14 +10,14 @@ namespace SqlReplicator
     {
         private readonly string _sourceConnectionString;
         private readonly string _targetConnectionString;
-        private readonly List<TableInfo> _selectedTables;
+        private readonly List<FieldMapping> _fieldMappings;
         private readonly string _listenerType;
 
-        public SqlServiceGenerator(string sourceConnectionString, string targetConnectionString, List<TableInfo> selectedTables, string listenerType)
+        public SqlServiceGenerator(string sourceConnectionString, string targetConnectionString, List<FieldMapping> fieldMappings, string listenerType)
         {
             _sourceConnectionString = sourceConnectionString ?? throw new ArgumentNullException(nameof(sourceConnectionString));
             _targetConnectionString = targetConnectionString ?? throw new ArgumentNullException(nameof(targetConnectionString));
-            _selectedTables = selectedTables ?? throw new ArgumentNullException(nameof(selectedTables));
+            _fieldMappings = fieldMappings ?? throw new ArgumentNullException(nameof(fieldMappings));
             _listenerType = listenerType ?? "Trigger";
         }
 
@@ -38,19 +38,15 @@ namespace SqlReplicator
                         {
                             // Create change tracking table
                             await CreateChangeTrackingTable(connection, transaction);
-
-                            // Generate triggers for each table
-                            foreach (var table in _selectedTables)
+                            // استخراج جداول یکتا از FieldMappings
+                            var targetTables = _fieldMappings.Select(f => f.TargetTableName).Distinct().ToList();
+                            foreach (var tableName in targetTables)
                             {
-                                await GenerateTableTriggers(connection, transaction, table);
+                                var tableFields = _fieldMappings.Where(f => f.TargetTableName == tableName).ToList();
+                                await GenerateTableTriggers(connection, transaction, tableName, tableFields);
                             }
-
-                            // Generate extraction procedures
                             await GenerateExtractionProcedures(connection, transaction);
-
-                            // Generate application procedures
                             await GenerateApplicationProcedures(connection, transaction);
-
                             transaction.Commit();
                         }
                         catch (Exception)
@@ -60,13 +56,11 @@ namespace SqlReplicator
                         }
                     }
                 }
-
                 // 3. کپی اولیه داده‌ها
                 await PerformInitialDataSync();
             }
             else if (_listenerType == "Polling")
             {
-                // TODO: Implement Polling logic (no triggers, periodic data comparison)
                 throw new NotImplementedException("Polling listener is not implemented yet.");
             }
             else if (_listenerType == "CDC" || _listenerType == "Change Tracking")
@@ -89,9 +83,10 @@ namespace SqlReplicator
                     try
                     {
                         // 1. حذف Triggerهای قدیمی
-                        foreach (var table in _selectedTables)
+                        foreach (var table in _fieldMappings.Select(f => f.TargetTableName).Distinct().ToList())
                         {
-                            await DropTableTriggers(connection, transaction, table);
+                            var tableFields = _fieldMappings.Where(f => f.TargetTableName == table).ToList();
+                            await DropTableTriggers(connection, transaction, table, tableFields);
                         }
 
                         // 2. حذف Stored Procedureهای قدیمی
@@ -111,14 +106,14 @@ namespace SqlReplicator
             }
         }
 
-        private async Task DropTableTriggers(SqlConnection connection, SqlTransaction transaction, TableInfo table)
+        private async Task DropTableTriggers(SqlConnection connection, SqlTransaction transaction, string tableName, List<FieldMapping> tableFields)
         {
             var triggers = new[] { "Insert", "Update", "Delete" };
             foreach (var triggerType in triggers)
             {
                 var dropTrigger = new SqlCommand($@"
-                    IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'TR_{table.TableName}_{triggerType}')
-                        DROP TRIGGER [dbo].[TR_{table.TableName}_{triggerType}]", connection, transaction);
+                    IF EXISTS (SELECT * FROM sys.triggers WHERE name = 'TR_{tableName}_{triggerType}')
+                        DROP TRIGGER [dbo].[TR_{tableName}_{triggerType}]", connection, transaction);
                 await dropTrigger.ExecuteNonQueryAsync();
             }
         }
@@ -145,13 +140,14 @@ namespace SqlReplicator
 
         private async Task PerformInitialDataSync()
         {
-            foreach (var table in _selectedTables)
+            foreach (var table in _fieldMappings.Select(f => f.TargetTableName).Distinct().ToList())
             {
-                await CopyTableData(table);
+                var tableFields = _fieldMappings.Where(f => f.TargetTableName == table).ToList();
+                await CopyTableData(table, tableFields);
             }
         }
 
-        private async Task CopyTableData(TableInfo table)
+        private async Task CopyTableData(string tableName, List<FieldMapping> tableFields)
         {
             // اتصال به دیتابیس مبدا
             using (var sourceConnection = new SqlConnection(_sourceConnectionString))
@@ -164,28 +160,28 @@ namespace SqlReplicator
                     await targetConnection.OpenAsync();
                     
                     // پاک کردن داده‌های موجود در جدول مقصد
-                    var clearTargetTable = new SqlCommand($"DELETE FROM [{table.TableName}]", targetConnection);
+                    var clearTargetTable = new SqlCommand($"DELETE FROM [{tableName}]", targetConnection);
                     await clearTargetTable.ExecuteNonQueryAsync();
                     
                     // خواندن داده‌ها از مبدا
-                    var selectFields = string.Join(", ", table.Fields.Select(f => $"[{f.FieldName}]"));
-                    var selectCommand = new SqlCommand($"SELECT {selectFields} FROM [{table.TableName}]", sourceConnection);
+                    var selectFields = string.Join(", ", tableFields.Select(f => $"[{f.TargetField}]"));
+                    var selectCommand = new SqlCommand($"SELECT {selectFields} FROM [{tableName}]", sourceConnection);
                     
                     using (var reader = await selectCommand.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
                         {
                             // ساخت INSERT statement برای مقصد
-                            var insertFields = string.Join(", ", table.Fields.Select(f => $"[{f.FieldName}]"));
-                            var insertValues = string.Join(", ", table.Fields.Select(f => $"@{f.FieldName}"));
-                            var insertCommand = new SqlCommand($"INSERT INTO [{table.TableName}] ({insertFields}) VALUES ({insertValues})", targetConnection);
+                            var insertFields = string.Join(", ", tableFields.Select(f => $"[{f.TargetField}]"));
+                            var insertValues = string.Join(", ", tableFields.Select(f => $"@{f.TargetField}"));
+                            var insertCommand = new SqlCommand($"INSERT INTO [{tableName}] ({insertFields}) VALUES ({insertValues})", targetConnection);
                             
                             // اضافه کردن پارامترها
-                            for (int i = 0; i < table.Fields.Count; i++)
+                            for (int i = 0; i < tableFields.Count; i++)
                             {
-                                var field = table.Fields[i];
+                                var field = tableFields[i];
                                 var value = reader.IsDBNull(i) ? DBNull.Value : reader.GetValue(i);
-                                insertCommand.Parameters.AddWithValue($"@{field.FieldName}", value);
+                                insertCommand.Parameters.AddWithValue($"@{field.TargetField}", value);
                             }
                             
                             await insertCommand.ExecuteNonQueryAsync();
@@ -214,79 +210,73 @@ namespace SqlReplicator
             await command.ExecuteNonQueryAsync();
         }
 
-        private async Task GenerateTableTriggers(SqlConnection connection, SqlTransaction transaction, TableInfo table)
+        private async Task GenerateTableTriggers(SqlConnection connection, SqlTransaction transaction, string tableName, List<FieldMapping> tableFields)
         {
             // Get primary key field
-            var primaryKeyField = table.Fields.FirstOrDefault(f => f.IsPrimaryKey);
-            if (primaryKeyField == null)
-                throw new InvalidOperationException($"Table {table.TableName} does not have a primary key.");
-
+            var primaryKeyMapping = tableFields.FirstOrDefault(f => f.IsPrimaryKey);
+            if (primaryKeyMapping == null)
+                throw new InvalidOperationException($"Table {tableName} does not have a primary key mapping.");
+            var primaryKeyField = primaryKeyMapping.TargetField;
             // Create trigger for INSERT
             var insertTrigger = new SqlCommand($@"
-                CREATE OR ALTER TRIGGER [dbo].[TR_{table.TableName}_Insert]
-                ON [dbo].[{table.TableName}]
+                CREATE OR ALTER TRIGGER [dbo].[TR_{tableName}_Insert]
+                ON [dbo].[{tableName}]
                 AFTER INSERT
                 AS
                 BEGIN
                     SET NOCOUNT ON;
-                    
                     INSERT INTO ChangeTracking (TableName, OperationType, PrimaryKeyValue, ChangeData)
                     SELECT 
-                        '{table.TableName}',
+                        '{tableName}',
                         'I',
-                        CAST(i.[{primaryKeyField.FieldName}] AS NVARCHAR(MAX)),
+                        CAST(i.[{primaryKeyField}] AS NVARCHAR(MAX)),
                         (
                             SELECT 
-                                {string.Join(", ", table.Fields.Select(f => $"i.[{f.FieldName}] AS [{f.FieldName}]"))}
+                                {string.Join(", ", tableFields.Select(f => $"i.[{f.TargetField}] AS [{f.TargetField}]") )}
                             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
                         )
                     FROM inserted i;
                 END", connection, transaction);
-
             // Create trigger for UPDATE
             var updateTrigger = new SqlCommand($@"
-                CREATE OR ALTER TRIGGER [dbo].[TR_{table.TableName}_Update]
-                ON [dbo].[{table.TableName}]
+                CREATE OR ALTER TRIGGER [dbo].[TR_{tableName}_Update]
+                ON [dbo].[{tableName}]
                 AFTER UPDATE
                 AS
                 BEGIN
                     SET NOCOUNT ON;
-                    
                     INSERT INTO ChangeTracking (TableName, OperationType, PrimaryKeyValue, ChangeData)
                     SELECT 
-                        '{table.TableName}',
+                        '{tableName}',
                         'U',
-                        CAST(i.[{primaryKeyField.FieldName}] AS NVARCHAR(MAX)),
+                        CAST(i.[{primaryKeyField}] AS NVARCHAR(MAX)),
                         (
                             SELECT 
-                                {string.Join(", ", table.Fields.Select(f => $"i.[{f.FieldName}] AS [{f.FieldName}]"))}
+                                {string.Join(", ", tableFields.Select(f => $"i.[{f.TargetField}] AS [{f.TargetField}]") )}
                             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
                         )
                     FROM inserted i;
                 END", connection, transaction);
-
             // Create trigger for DELETE
             var deleteTrigger = new SqlCommand($@"
-                CREATE OR ALTER TRIGGER [dbo].[TR_{table.TableName}_Delete]
-                ON [dbo].[{table.TableName}]
+                CREATE OR ALTER TRIGGER [dbo].[TR_{tableName}_Delete]
+                ON [dbo].[{tableName}]
                 AFTER DELETE
                 AS
                 BEGIN
                     SET NOCOUNT ON;
-                    
                     INSERT INTO ChangeTracking (TableName, OperationType, PrimaryKeyValue, ChangeData)
                     SELECT 
-                        '{table.TableName}',
+                        '{tableName}',
                         'D',
-                        CAST(d.[{primaryKeyField.FieldName}] AS NVARCHAR(MAX)),
+                        CAST(d.[{primaryKeyField}] AS NVARCHAR(MAX)),
                         (
                             SELECT 
-                                {string.Join(", ", table.Fields.Select(f => $"d.[{f.FieldName}] AS [{f.FieldName}]"))}
+                                {string.Join(", ", tableFields.Select(f => $"d.[{f.TargetField}] AS [{f.TargetField}]") )}
                             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
                         )
                     FROM deleted d;
                 END", connection, transaction);
-
             await insertTrigger.ExecuteNonQueryAsync();
             await updateTrigger.ExecuteNonQueryAsync();
             await deleteTrigger.ExecuteNonQueryAsync();
