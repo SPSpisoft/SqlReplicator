@@ -38,11 +38,11 @@ namespace SqlReplicator
                         {
                             // Create change tracking table
                             await CreateChangeTrackingTable(connection, transaction);
-                            // استخراج جداول یکتا از FieldMappings
-                            var targetTables = _fieldMappings.Select(f => f.TargetTableName).Distinct().ToList();
+                            // استخراج جداول یکتا از FieldMappings فقط برای فیلدهای انتخاب‌شده
+                            var targetTables = _fieldMappings.Where(f => f.IsSelected).Select(f => f.TargetTableName).Distinct().ToList();
                             foreach (var tableName in targetTables)
                             {
-                                var tableFields = _fieldMappings.Where(f => f.TargetTableName == tableName).ToList();
+                                var tableFields = _fieldMappings.Where(f => f.TargetTableName == tableName && f.IsSelected).ToList();
                                 await GenerateTableTriggers(connection, transaction, tableName, tableFields);
                             }
                             await GenerateExtractionProcedures(connection, transaction);
@@ -82,10 +82,10 @@ namespace SqlReplicator
                 {
                     try
                     {
-                        // 1. حذف Triggerهای قدیمی
-                        foreach (var table in _fieldMappings.Select(f => f.TargetTableName).Distinct().ToList())
+                        // 1. حذف Triggerهای قدیمی فقط برای جداول انتخاب‌شده
+                        foreach (var table in _fieldMappings.Where(f => f.IsSelected).Select(f => f.TargetTableName).Distinct().ToList())
                         {
-                            var tableFields = _fieldMappings.Where(f => f.TargetTableName == table).ToList();
+                            var tableFields = _fieldMappings.Where(f => f.TargetTableName == table && f.IsSelected).ToList();
                             await DropTableTriggers(connection, transaction, table, tableFields);
                         }
 
@@ -140,9 +140,9 @@ namespace SqlReplicator
 
         private async Task PerformInitialDataSync()
         {
-            foreach (var table in _fieldMappings.Select(f => f.TargetTableName).Distinct().ToList())
+            foreach (var table in _fieldMappings.Where(f => f.IsSelected).Select(f => f.TargetTableName).Distinct().ToList())
             {
-                var tableFields = _fieldMappings.Where(f => f.TargetTableName == table).ToList();
+                var tableFields = _fieldMappings.Where(f => f.TargetTableName == table && f.IsSelected).ToList();
                 await CopyTableData(table, tableFields);
             }
         }
