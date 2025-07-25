@@ -39,10 +39,10 @@ namespace SqlReplicator
                             // Create change tracking table
                             await CreateChangeTrackingTable(connection, transaction);
                             // استخراج جداول یکتا از FieldMappings فقط برای فیلدهای انتخاب‌شده
-                            var targetTables = _fieldMappings.Where(f => f.IsSelected).Select(f => f.TargetTableName).Distinct().ToList();
+                            var targetTables = _fieldMappings.Select(f => f.SourceTableName).Distinct().ToList();
                             foreach (var tableName in targetTables)
                             {
-                                var tableFields = _fieldMappings.Where(f => f.TargetTableName == tableName && f.IsSelected).ToList();
+                                var tableFields = _fieldMappings.Where(f => f.SourceTableName == tableName).ToList();
                                 await GenerateTableTriggers(connection, transaction, tableName, tableFields);
                             }
                             await GenerateExtractionProcedures(connection, transaction);
@@ -216,7 +216,7 @@ namespace SqlReplicator
             var primaryKeyMapping = tableFields.FirstOrDefault(f => f.IsPrimaryKey);
             if (primaryKeyMapping == null)
                 throw new InvalidOperationException($"Table {tableName} does not have a primary key mapping.");
-            var primaryKeyField = primaryKeyMapping.TargetField;
+            var primaryKeyField = primaryKeyMapping.SourceField;
             // Create trigger for INSERT
             var insertTrigger = new SqlCommand($@"
                 CREATE OR ALTER TRIGGER [dbo].[TR_{tableName}_Insert]
@@ -232,7 +232,7 @@ namespace SqlReplicator
                         CAST(i.[{primaryKeyField}] AS NVARCHAR(MAX)),
                         (
                             SELECT 
-                                {string.Join(", ", tableFields.Select(f => $"i.[{f.TargetField}] AS [{f.TargetField}]") )}
+                                {string.Join(", ", tableFields.Select(f => $"i.[{f.SourceField}] AS [{f.SourceField}]") )}
                             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
                         )
                     FROM inserted i;
@@ -252,7 +252,7 @@ namespace SqlReplicator
                         CAST(i.[{primaryKeyField}] AS NVARCHAR(MAX)),
                         (
                             SELECT 
-                                {string.Join(", ", tableFields.Select(f => $"i.[{f.TargetField}] AS [{f.TargetField}]") )}
+                                {string.Join(", ", tableFields.Select(f => $"i.[{f.SourceField}] AS [{f.SourceField}]") )}
                             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
                         )
                     FROM inserted i;
@@ -272,7 +272,7 @@ namespace SqlReplicator
                         CAST(d.[{primaryKeyField}] AS NVARCHAR(MAX)),
                         (
                             SELECT 
-                                {string.Join(", ", tableFields.Select(f => $"d.[{f.TargetField}] AS [{f.TargetField}]") )}
+                                {string.Join(", ", tableFields.Select(f => $"d.[{f.SourceField}] AS [{f.SourceField}]") )}
                             FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
                         )
                     FROM deleted d;

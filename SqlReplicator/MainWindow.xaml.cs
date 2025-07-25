@@ -745,10 +745,6 @@ namespace SqlReplicator
                                     "DELETE FROM FieldMappings", connection, transaction);
                                 await deleteFieldMappings.ExecuteNonQueryAsync();
 
-                                var deleteTableSelections = new SqlCommand(
-                                    "DELETE FROM TableSelections", connection, transaction);
-                                await deleteTableSelections.ExecuteNonQueryAsync();
-
                                 // Delete from main config table
                                 var deleteConfigs = new SqlCommand(
                                     "DELETE FROM ReplicationConfig", connection, transaction);
