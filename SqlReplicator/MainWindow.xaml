@@ -4,9 +4,9 @@
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                  Title="SQL Replicator - Database Connection Setup" 
-                 Height="700" Width="750"
+                 Height="600" Width="650"
                  WindowStartupLocation="CenterScreen"
-                 ResizeMode="CanResize">
+                 ResizeMode="CanMinimize">
 
     <Grid Background="#F5F5F5">
         <Grid.Resources>
@@ -300,16 +300,10 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Configuration Status Section -->
-                        <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#F8F9FA" Margin="0,0,0,10">
-                            <StackPanel>
-                                <TextBlock Text="Configuration Status" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="150">
-                                    <TextBlock x:Name="StatusSummaryText" Text="Loading configuration status..." TextWrapping="Wrap" FontFamily="Consolas" FontSize="11"/>
-                                </ScrollViewer>
-                                <Button x:Name="RefreshStatusButton" Content="Refresh Status" Click="RefreshStatus_Click" Margin="0,10,0,0" Padding="5,2" HorizontalAlignment="Left"/>
-                            </StackPanel>
-                        </Border>
+                                                 <!-- Refresh Status Button -->
+                         <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
+                             <Button x:Name="RefreshStatusButton" Content="Refresh Status" Click="RefreshStatus_Click" Padding="10,5" Background="#2196F3" Foreground="White"/>
+                         </StackPanel>
 
                         <!-- Detailed Report Section -->
                         <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#FFF" Margin="0,0,0,10">

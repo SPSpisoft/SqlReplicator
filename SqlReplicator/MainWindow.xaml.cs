@@ -968,12 +968,10 @@ namespace SqlReplicator
             {
                 if (!connectionStrings.ContainsKey("Base") || string.IsNullOrEmpty(connectionStrings["Base"]))
                 {
-                    StatusSummaryText.Text = "Base database connection not configured.";
                     DetailedReportText.Text = "Please complete the previous steps to configure the base database connection.";
                     return;
                 }
 
-                StatusSummaryText.Text = "Loading configuration status...";
                 DetailedReportText.Text = "Please wait while loading configuration details...";
 
                 _currentConfigStatus = await new ConfigurationStatus().LoadFromDatabase(connectionStrings["Base"]);
@@ -986,8 +984,7 @@ namespace SqlReplicator
             }
             catch (Exception ex)
             {
-                StatusSummaryText.Text = $"Error loading configuration: {ex.Message}";
-                DetailedReportText.Text = "Failed to load configuration status. Please check your database connection.";
+                DetailedReportText.Text = $"Error loading configuration: {ex.Message}\n\nFailed to load configuration status. Please check your database connection.";
             }
         }
 
@@ -995,7 +992,6 @@ namespace SqlReplicator
         {
             if (_currentConfigStatus == null) return;
 
-            StatusSummaryText.Text = _currentConfigStatus.GetStatusSummary();
             DetailedReportText.Text = _currentConfigStatus.GetDetailedReport();
         }
 
