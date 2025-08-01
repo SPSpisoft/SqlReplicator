@@ -574,9 +574,10 @@ namespace SqlReplicator
             //Step2Button.IsEnabled = currentStep != 2;
             //Step3Button.IsEnabled = currentStep != 3;
             //Step4Button.IsEnabled = currentStep != 4;
+            //Step5Button.IsEnabled = currentStep != 5;
 
             // Update button styles based on current step
-            var buttons = new[] { Step1Button, Step2Button, Step3Button, Step4Button };
+            var buttons = new[] { Step1Button, Step2Button, Step3Button, Step4Button, Step5Button };
             for (int i = 0; i < buttons.Length; i++)
             {
                 if (buttons[i] != null)
@@ -643,7 +644,7 @@ namespace SqlReplicator
                 //configWindow.Owner = this;
                 //configWindow.ShowDialog();
 
-                if (currentStep < 4)
+                if (currentStep < 5)
                 {
                     ShowStep(currentStep + 1);
                 }
@@ -798,6 +799,7 @@ namespace SqlReplicator
             Step2Panel.Visibility = Visibility.Collapsed;
             Step3Panel.Visibility = Visibility.Collapsed;
             Step4Panel.Visibility = Visibility.Collapsed;
+            Step5Panel.Visibility = Visibility.Collapsed;
 
             // Show selected panel
             switch (stepNumber)
@@ -814,6 +816,12 @@ namespace SqlReplicator
                 case 4:
                     Step4Panel.Visibility = Visibility.Visible;
                     _ = LoadConfigurationStatus();
+                    break;
+                case 5:
+                    Step5Panel.Visibility = Visibility.Visible;
+                    LoadAvailableListeners();
+                    PopulateListenerSelectionPanel();
+                    UpdateListenerSelection();
                     break;
             }
 
@@ -974,13 +982,10 @@ namespace SqlReplicator
 
                 DetailedReportText.Text = "Please wait while loading configuration details...";
 
-                _currentConfigStatus = await new ConfigurationStatus().LoadFromDatabase(connectionStrings["Base"]);
+                // Load available listeners for Step 5
                 _availableListeners = ListenerConfiguration.GetAvailableListeners();
 
                 UpdateConfigurationStatusDisplay();
-                LoadAvailableListeners();
-                PopulateListenerSelectionPanel();
-                UpdateListenerSelection();
             }
             catch (Exception ex)
             {
@@ -990,9 +995,86 @@ namespace SqlReplicator
 
         private void UpdateConfigurationStatusDisplay()
         {
-            if (_currentConfigStatus == null) return;
+            var report = new List<string>
+            {
+                "=== CONFIGURATION STATUS REPORT ===",
+                "",
+                "=== CURRENT UI CONFIGURATION ===",
+                ""
+            };
 
-            DetailedReportText.Text = _currentConfigStatus.GetDetailedReport();
+            // Check current UI state for database connections
+            var hasBaseConfig = !string.IsNullOrWhiteSpace(BaseDatabaseCombo.Text);
+            var hasSourceConfig = !string.IsNullOrWhiteSpace(SourceDatabaseCombo.Text);
+            var hasTargetConfig = !string.IsNullOrWhiteSpace(TargetDatabaseCombo.Text);
+
+            // Database Connections Status
+            report.Add("📊 DATABASE CONNECTIONS:");
+            if (hasBaseConfig)
+            {
+                report.Add($"  Base: {BaseDatabaseCombo.Text} ✅");
+            }
+            else
+            {
+                report.Add("  Base: Not configured ❌");
+            }
+
+            if (hasSourceConfig)
+            {
+                report.Add($"  Source: {SourceDatabaseCombo.Text} ✅");
+            }
+            else
+            {
+                report.Add("  Source: Not configured ❌");
+            }
+
+            if (hasTargetConfig)
+            {
+                report.Add($"  Target: {TargetDatabaseCombo.Text} ✅");
+            }
+            else
+            {
+                report.Add("  Target: Not configured ❌");
+            }
+            report.Add("");
+
+            // Overall Configuration Status
+            report.Add("📋 CONFIGURATION STATUS:");
+            if (hasBaseConfig && hasSourceConfig && hasTargetConfig)
+            {
+                report.Add("  🟢 All database connections are configured");
+                report.Add("  🟡 Field mappings need to be configured");
+                report.Add("  🟡 Listeners need to be selected");
+            }
+            else
+            {
+                report.Add("  🔴 Please complete all database configurations first");
+            }
+            report.Add("");
+
+            // Next Steps
+            report.Add("📝 NEXT STEPS:");
+            if (!hasBaseConfig)
+            {
+                report.Add("  1. Configure base database connection");
+            }
+            else if (!hasSourceConfig)
+            {
+                report.Add("  1. Configure source database connection");
+            }
+            else if (!hasTargetConfig)
+            {
+                report.Add("  1. Configure target database connection");
+            }
+            else
+            {
+                report.Add("  1. ✅ All database connections configured");
+                report.Add("  2. Configure field mappings and table selections");
+                report.Add("  3. Select listeners for change detection");
+                report.Add("  4. Create and start the replication service");
+            }
+
+            DetailedReportText.Text = string.Join("\n", report);
         }
 
         private void LoadAvailableListeners()
@@ -1204,28 +1286,65 @@ namespace SqlReplicator
 
         private async Task SaveListenerConfiguration(string baseConnectionString, List<ListenerConfiguration> selectedListeners)
         {
-            try
+            using (var connection = new SqlConnection(baseConnectionString))
             {
-                using (var connection = new SqlConnection(baseConnectionString))
+                await connection.OpenAsync();
+                using (var command = new SqlCommand())
                 {
-                    await connection.OpenAsync();
+                    command.Connection = connection;
+                    command.CommandText = @"
+                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('ReplicationConfig') AND name = 'SelectedListeners')
+                        BEGIN
+                            ALTER TABLE ReplicationConfig ADD SelectedListeners NVARCHAR(MAX)
+                        END
+
+                        UPDATE ReplicationConfig 
+                        SET SelectedListeners = @SelectedListeners 
+                        WHERE Id = (SELECT TOP 1 Id FROM ReplicationConfig ORDER BY Id DESC)";
 
                     var listenerTypes = string.Join(",", selectedListeners.Select(l => l.Type.ToString()));
-                    
-                    var command = new SqlCommand(
-                        @"UPDATE ReplicationConfig 
-                          SET ListenerType = @ListenerType 
-                          WHERE Id = (SELECT TOP 1 Id FROM ReplicationConfig ORDER BY Id DESC)", connection);
-                    
-                    command.Parameters.AddWithValue("@ListenerType", listenerTypes);
+                    command.Parameters.AddWithValue("@SelectedListeners", listenerTypes);
+
                     await command.ExecuteNonQueryAsync();
+                }
+            }
+        }
+
+        // Service Management Event Handlers
+        private async void CheckServiceStatus_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                DisplayProgress("Checking service status...", true);
+                
+                // Check if the service exists and get its status
+                var serviceStatus = await ServiceInstallerManager.GetServiceStatus();
+                
+                if (serviceStatus == null)
+                {
+                    DisplayProgress("Service not found. Please create the service first.", false);
+                }
+                else
+                {
+                    DisplayProgress($"Service Status: {serviceStatus}", true);
                 }
             }
             catch (Exception ex)
             {
-                throw new Exception($"Failed to save listener configuration: {ex.Message}");
+                DisplayProgress($"Error checking service status: {ex.Message}", false);
             }
         }
 
+        private void AddListener_Click(object sender, RoutedEventArgs e)
+        {
+            // This would open a dialog to add a new listener
+            MessageBox.Show("Add Listener functionality will be implemented in the next version.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void RemoveListener_Click(object sender, RoutedEventArgs e)
+        {
+            // This would remove the selected listener
+            MessageBox.Show("Remove Listener functionality will be implemented in the next version.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 }

@@ -336,56 +336,70 @@ namespace SqlReplicator
 
 
         /// <summary>
-        /// به روز رسانی فایل App.config سرویس برای ذخیره رشته اتصال دیتابیس پایه.
+        /// به روز رسانی فایل App.config سرویس با رشته اتصال دیتابیس پایه.
         /// </summary>
         private static bool UpdateServiceAppConfig(string baseConnectionString, IProgress<Tuple<string, bool>> progress)
         {
-            string configFilePath = ServiceExePath + ".config";
             try
             {
-                XDocument doc;
-                if (File.Exists(configFilePath))
+                string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SpsReplicationService.exe.config");
+                if (!File.Exists(configPath))
                 {
-                    doc = XDocument.Load(configFilePath);
+                    progress.Report(Tuple.Create("خطا: فایل پیکربندی سرویس یافت نشد.", false));
+                    return false;
+                }
+
+                XDocument doc = XDocument.Load(configPath);
+                var connectionStringElement = doc.Descendants("connectionStrings")
+                    .Elements("add")
+                    .FirstOrDefault(e => e.Attribute("name")?.Value == "BaseConnectionString");
+
+                if (connectionStringElement != null)
+                {
+                    connectionStringElement.Attribute("connectionString")?.SetValue(baseConnectionString);
                 }
                 else
                 {
-                    // اگر فایل config وجود نداشت، یک فایل پایه ایجاد کنید.
-                    doc = new XDocument(
-                        new XElement("configuration",
-                            new XElement("appSettings")
-                        )
-                    );
+                    var connectionStringsElement = doc.Descendants("connectionStrings").FirstOrDefault();
+                    if (connectionStringsElement != null)
+                    {
+                        connectionStringsElement.Add(new XElement("add",
+                            new XAttribute("name", "BaseConnectionString"),
+                            new XAttribute("connectionString", baseConnectionString)));
+                    }
                 }
 
-                XElement? appSettings = doc.Element("configuration")?.Element("appSettings");
-                if (appSettings == null)
-                {
-                    appSettings = new XElement("appSettings");
-                    doc.Element("configuration")?.Add(appSettings);
-                }
-
-                XElement? setting = appSettings.Elements("add")
-                                              .FirstOrDefault(e => e.Attribute("key")?.Value == "BaseDatabaseConnection");
-
-                if (setting != null)
-                {
-                    setting.SetAttributeValue("value", baseConnectionString);
-                }
-                else
-                {
-                    appSettings.Add(new XElement("add",
-                                       new XAttribute("key", "BaseDatabaseConnection"),
-                                       new XAttribute("value", baseConnectionString)));
-                }
-
-                doc.Save(configFilePath);
+                doc.Save(configPath);
+                progress.Report(Tuple.Create("فایل پیکربندی سرویس به روز رسانی شد.", true));
                 return true;
             }
             catch (Exception ex)
             {
-                progress.Report(Tuple.Create($"خطا در به روز رسانی فایل App.config سرویس: {ex.Message}", false));
+                progress.Report(Tuple.Create($"خطا در به روز رسانی فایل پیکربندی: {ex.Message}", false));
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Get the current status of the replication service.
+        /// </summary>
+        /// <returns>Service status as string, or null if service doesn't exist.</returns>
+        public static async Task<string?> GetServiceStatus()
+        {
+            try
+            {
+                var service = ServiceController.GetServices().FirstOrDefault(s => s.ServiceName == MyServiceName);
+                
+                if (service == null)
+                {
+                    return null; // Service doesn't exist
+                }
+
+                return service.Status.ToString();
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
     }
