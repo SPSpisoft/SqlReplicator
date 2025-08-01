@@ -4,9 +4,9 @@
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                  Title="SQL Replicator - Database Connection Setup" 
-                 Height="600" Width="650"
+                 Height="700" Width="750"
                  WindowStartupLocation="CenterScreen"
-                 ResizeMode="CanMinimize">
+                 ResizeMode="CanResize">
 
     <Grid Background="#F5F5F5">
         <Grid.Resources>
@@ -94,10 +94,11 @@
         </Border>
 
         <!-- Main Content Area -->
-        <Grid Grid.Row="1" x:Name="MainContentGrid">
-            <!-- Step 1: Base Database -->
-            <Border x:Name="Step1Panel" Style="{StaticResource DatabaseCardStyle}" Visibility="Visible">
-                <StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+            <Grid x:Name="MainContentGrid">
+                <!-- Step 1: Base Database -->
+                <Border x:Name="Step1Panel" Style="{StaticResource DatabaseCardStyle}" Visibility="Visible">
+                    <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
                         <iconPacks:PackIconMaterial Kind="Database" Width="32" Height="32" Foreground="#2196F3" VerticalAlignment="Center"/>
                         <TextBlock Text="Base Database Configuration" FontSize="24" FontWeight="Bold" Foreground="#333" Margin="15,0,0,0" VerticalAlignment="Center"/>
@@ -290,34 +291,78 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                        <!--<StackPanel Grid.Row="0" Orientation="Horizontal" x:Name="ConfigButtonsPanel" Visibility="Hidden">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="407"/>
-
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Base database connection string :" Margin="0,3,0,0"/>
-                                <TextBox Grid.Row="0" IsReadOnly="true"  Grid.Column="1" x:Name="BaseConnectionStringTextBox" Margin="10,0,0,10"/>
-                            </Grid>
-                        </StackPanel>-->
-
-
-                            <!-- Fixed height box for checklist -->
-                        <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="5" Background="#FFF">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="140">
-                                <StackPanel x:Name="ProgressStackPanel">
-                                    <!-- Checklist steps will be added here -->
-                                </StackPanel>
-                            </ScrollViewer>
+                        <!-- Configuration Status Section -->
+                        <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#F8F9FA" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Configuration Status" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="150">
+                                    <TextBlock x:Name="StatusSummaryText" Text="Loading configuration status..." TextWrapping="Wrap" FontFamily="Consolas" FontSize="11"/>
+                                </ScrollViewer>
+                                <Button x:Name="RefreshStatusButton" Content="Refresh Status" Click="RefreshStatus_Click" Margin="0,10,0,0" Padding="5,2" HorizontalAlignment="Left"/>
+                            </StackPanel>
                         </Border>
 
-                        <Button Grid.Row="2" Content="Install/Update and Start Sync Service" 
-                                  Click="ManageServiceButton_Click" Margin="0,10,0,0" Padding="10"/>
+                        <!-- Detailed Report Section -->
+                        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#FFF" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Detailed Configuration Report" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="180">
+                                    <TextBlock x:Name="DetailedReportText" Text="Loading detailed report..." TextWrapping="Wrap" FontFamily="Consolas" FontSize="10"/>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Listener Configuration Section -->
+                        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#FFF" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Listener Configuration" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                                <TextBlock Text="Select the change detection methods you want to use. Multiple listeners can work together for redundancy." 
+                                           Foreground="#666" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                                
+                                <!-- Compatibility Warning -->
+                                <Border x:Name="CompatibilityWarningBorder" BorderBrush="#FF9800" BorderThickness="1" CornerRadius="3" Padding="8" Background="#FFF3E0" Margin="0,0,0,10" Visibility="Collapsed">
+                                    <TextBlock x:Name="CompatibilityWarningText" Foreground="#E65100" TextWrapping="Wrap" FontSize="12"/>
+                                </Border>
+                                
+                                <!-- Listener Selection Panel -->
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="220">
+                                    <StackPanel x:Name="ListenerSelectionPanel">
+                                        <!-- Dynamic listener checkboxes will be added here -->
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Service Management Section -->
+                        <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#FFF">
+                            <StackPanel>
+                                <TextBlock Text="Service Management" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                                <TextBlock Text="Create and manage the replication service with your selected listeners." 
+                                           Foreground="#666" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                                
+                                <!-- Progress Display -->
+                                <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="5" Background="#FFF" Margin="0,0,0,10">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="150">
+                                        <StackPanel x:Name="ProgressStackPanel">
+                                            <!-- Progress steps will be added here -->
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </Border>
+
+                                <Button x:Name="ManageServiceButton" Content="Create and Start Sync Service" 
+                                        Click="ManageServiceButton_Click" Margin="0,10,0,0" Padding="15,8" 
+                                        Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                     
                     <!-- Navigation Row -->
@@ -341,7 +386,8 @@
 
                 </StackPanel>
             </Border>
-        </Grid>
+            </Grid>
+        </ScrollViewer>
 
         <!-- Footer -->
         <Border Grid.Row="2" Background="White" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">

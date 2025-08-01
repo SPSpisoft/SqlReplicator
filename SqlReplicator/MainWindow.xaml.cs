@@ -34,6 +34,8 @@ namespace SqlReplicator
         private DatabaseInfo? targetDb;
         private List<TableInfo>? selectedTables;
         private string replicationType = "Full";
+        private ConfigurationStatus? _currentConfigStatus;
+        private List<ListenerConfiguration>? _availableListeners;
 
         public MainWindow()
         {
@@ -811,6 +813,7 @@ namespace SqlReplicator
                     break;
                 case 4:
                     Step4Panel.Visibility = Visibility.Visible;
+                    _ = LoadConfigurationStatus();
                     break;
             }
 
@@ -840,13 +843,57 @@ namespace SqlReplicator
                 return;
             }
 
-            // Get the base database connection string from the TextBox
+            // Get the base database connection string
             string baseConnectionString = connectionStrings["Base"];
 
             if (string.IsNullOrWhiteSpace(baseConnectionString))
             {
                 DisplayProgress("Base database connection string cannot be empty.", false);
                 MessageBox.Show("Please enter the base database connection string.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ((Button)sender).IsEnabled = true;
+                return;
+            }
+
+            // Get selected listeners
+            var selectedListeners = GetSelectedListeners();
+            
+            if (selectedListeners.Count == 0)
+            {
+                DisplayProgress("No listeners selected. Please select at least one listener.", false);
+                MessageBox.Show("Please select at least one listener for change detection.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ((Button)sender).IsEnabled = true;
+                return;
+            }
+
+            // Check compatibility
+            var compatibilityWarnings = ListenerCompatibilityChecker.CheckCompatibility(selectedListeners);
+            if (compatibilityWarnings.Count > 0)
+            {
+                var warningMessage = string.Join("\n", compatibilityWarnings);
+                var result = MessageBox.Show(
+                    $"The following warnings were detected:\n\n{warningMessage}\n\nDo you want to continue anyway?",
+                    "Listener Compatibility Warnings",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (result == MessageBoxResult.No)
+                {
+                    ((Button)sender).IsEnabled = true;
+                    return;
+                }
+            }
+
+            // Save listener configuration
+            try
+            {
+                DisplayProgress("Saving listener configuration...", true);
+                await SaveListenerConfiguration(baseConnectionString, selectedListeners);
+                DisplayProgress("Listener configuration saved successfully.", true);
+            }
+            catch (Exception ex)
+            {
+                DisplayProgress($"Failed to save listener configuration: {ex.Message}", false);
+                MessageBox.Show($"Failed to save listener configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 ((Button)sender).IsEnabled = true;
                 return;
             }
@@ -864,17 +911,20 @@ namespace SqlReplicator
 
                 if (success)
                 {
-                    MessageBox.Show("Sync service management completed successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Sync service created and started successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    
+                    // Refresh configuration status
+                    await LoadConfigurationStatus();
                 }
                 else
                 {
-                    MessageBox.Show("Service management operation failed. Please check the application logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Service creation failed. Please check the application logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
                 DisplayProgress($"Unexpected error: {ex.Message}", false);
-                MessageBox.Show($"Unexpected error while managing the service: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Unexpected error while creating the service: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -908,6 +958,277 @@ namespace SqlReplicator
             var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
             var principal = new System.Security.Principal.WindowsPrincipal(identity);
             return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+        }
+
+        //********************************** CONFIGURATION STATUS *********************************
+
+        private async Task LoadConfigurationStatus()
+        {
+            try
+            {
+                if (!connectionStrings.ContainsKey("Base") || string.IsNullOrEmpty(connectionStrings["Base"]))
+                {
+                    StatusSummaryText.Text = "Base database connection not configured.";
+                    DetailedReportText.Text = "Please complete the previous steps to configure the base database connection.";
+                    return;
+                }
+
+                StatusSummaryText.Text = "Loading configuration status...";
+                DetailedReportText.Text = "Please wait while loading configuration details...";
+
+                _currentConfigStatus = await new ConfigurationStatus().LoadFromDatabase(connectionStrings["Base"]);
+                _availableListeners = ListenerConfiguration.GetAvailableListeners();
+
+                UpdateConfigurationStatusDisplay();
+                LoadAvailableListeners();
+                PopulateListenerSelectionPanel();
+                UpdateListenerSelection();
+            }
+            catch (Exception ex)
+            {
+                StatusSummaryText.Text = $"Error loading configuration: {ex.Message}";
+                DetailedReportText.Text = "Failed to load configuration status. Please check your database connection.";
+            }
+        }
+
+        private void UpdateConfigurationStatusDisplay()
+        {
+            if (_currentConfigStatus == null) return;
+
+            StatusSummaryText.Text = _currentConfigStatus.GetStatusSummary();
+            DetailedReportText.Text = _currentConfigStatus.GetDetailedReport();
+        }
+
+        private void LoadAvailableListeners()
+        {
+            if (_availableListeners == null)
+            {
+                _availableListeners = ListenerConfiguration.GetAvailableListeners();
+            }
+        }
+
+        private void PopulateListenerSelectionPanel()
+        {
+            ListenerSelectionPanel.Children.Clear();
+
+            if (_availableListeners == null) return;
+
+            foreach (var listener in _availableListeners.OrderBy(l => l.Priority))
+            {
+                var listenerPanel = CreateListenerPanel(listener);
+                ListenerSelectionPanel.Children.Add(listenerPanel);
+            }
+        }
+
+        private UIElement CreateListenerPanel(ListenerConfiguration listener)
+        {
+            var border = new Border
+            {
+                BorderBrush = Brushes.LightGray,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(3),
+                Padding = new Thickness(8),
+                Margin = new Thickness(0, 0, 0, 5),
+                Background = Brushes.White
+            };
+
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            // Checkbox
+            var checkbox = new CheckBox
+            {
+                IsChecked = listener.IsEnabled,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, 0, 8, 0)
+            };
+            checkbox.Checked += OnListenerSelectionChanged;
+            checkbox.Unchecked += OnListenerSelectionChanged;
+            Grid.SetColumn(checkbox, 0);
+
+            // Content panel
+            var contentPanel = new StackPanel();
+            Grid.SetColumn(contentPanel, 1);
+
+            // Name and priority
+            var namePanel = new StackPanel { Orientation = Orientation.Horizontal };
+            var nameText = new TextBlock
+            {
+                Text = listener.Name,
+                FontWeight = FontWeights.Bold,
+                FontSize = 14
+            };
+            var priorityText = new TextBlock
+            {
+                Text = $" (Priority: {listener.Priority})",
+                Foreground = Brushes.Gray,
+                FontSize = 12
+            };
+            namePanel.Children.Add(nameText);
+            namePanel.Children.Add(priorityText);
+
+            // Description
+            var descriptionText = new TextBlock
+            {
+                Text = listener.Description,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 4, 0, 4),
+                FontSize = 11
+            };
+
+            // Performance and reliability indicators
+            var indicatorsPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
+            
+            var performanceText = new TextBlock
+            {
+                Text = $"Performance: {listener.PerformanceImpact}",
+                Foreground = GetPerformanceColor(listener.PerformanceImpact),
+                FontSize = 10,
+                Margin = new Thickness(0, 0, 15, 0)
+            };
+            
+            var reliabilityText = new TextBlock
+            {
+                Text = $"Reliability: {listener.ReliabilityLevel}",
+                Foreground = GetReliabilityColor(listener.ReliabilityLevel),
+                FontSize = 10
+            };
+
+            indicatorsPanel.Children.Add(performanceText);
+            indicatorsPanel.Children.Add(reliabilityText);
+
+            // Interval (for polling-based listeners)
+            if (listener.Interval.HasValue)
+            {
+                var intervalText = new TextBlock
+                {
+                    Text = $"Interval: {listener.Interval.Value.TotalMinutes} minutes",
+                    Foreground = Brushes.Blue,
+                    FontSize = 10,
+                    Margin = new Thickness(0, 4, 0, 0)
+                };
+                contentPanel.Children.Add(intervalText);
+            }
+
+            contentPanel.Children.Add(namePanel);
+            contentPanel.Children.Add(descriptionText);
+            contentPanel.Children.Add(indicatorsPanel);
+
+            grid.Children.Add(checkbox);
+            grid.Children.Add(contentPanel);
+            border.Child = grid;
+
+            // Store the listener configuration in the checkbox's Tag property
+            checkbox.Tag = listener;
+
+            return border;
+        }
+
+        private Brush GetPerformanceColor(string performance)
+        {
+            return performance switch
+            {
+                "Very Low" => Brushes.DarkGreen,
+                "Low" => Brushes.Green,
+                "Medium" => Brushes.Orange,
+                "High" => Brushes.Red,
+                _ => Brushes.Gray
+            };
+        }
+
+        private Brush GetReliabilityColor(string reliability)
+        {
+            return reliability switch
+            {
+                "Very High" => Brushes.DarkGreen,
+                "High" => Brushes.Green,
+                "Medium" => Brushes.Orange,
+                "Low" => Brushes.Red,
+                _ => Brushes.Gray
+            };
+        }
+
+        private void OnListenerSelectionChanged(object sender, RoutedEventArgs e)
+        {
+            var selectedListeners = GetSelectedListeners();
+            var warnings = ListenerCompatibilityChecker.CheckCompatibility(selectedListeners);
+
+            if (warnings.Count > 0)
+            {
+                CompatibilityWarningBorder.Visibility = Visibility.Visible;
+                CompatibilityWarningText.Text = string.Join("\n", warnings);
+            }
+            else
+            {
+                CompatibilityWarningBorder.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private List<ListenerConfiguration> GetSelectedListeners()
+        {
+            var selectedListeners = new List<ListenerConfiguration>();
+
+            foreach (var child in ListenerSelectionPanel.Children)
+            {
+                if (child is Border border && border.Child is Grid grid)
+                {
+                    var checkbox = grid.Children.OfType<CheckBox>().FirstOrDefault();
+                    if (checkbox?.IsChecked == true && checkbox.Tag is ListenerConfiguration listener)
+                    {
+                        selectedListeners.Add(listener);
+                    }
+                }
+            }
+
+            return selectedListeners;
+        }
+
+        private void UpdateListenerSelection()
+        {
+            if (_currentConfigStatus?.SelectedListeners == null) return;
+
+            foreach (var child in ListenerSelectionPanel.Children)
+            {
+                if (child is Border border && border.Child is Grid grid)
+                {
+                    var checkbox = grid.Children.OfType<CheckBox>().FirstOrDefault();
+                    if (checkbox?.Tag is ListenerConfiguration listener)
+                    {
+                        checkbox.IsChecked = _currentConfigStatus.SelectedListeners.Any(l => l.Type == listener.Type);
+                    }
+                }
+            }
+        }
+
+        private async void RefreshStatus_Click(object sender, RoutedEventArgs e)
+        {
+            await LoadConfigurationStatus();
+        }
+
+        private async Task SaveListenerConfiguration(string baseConnectionString, List<ListenerConfiguration> selectedListeners)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(baseConnectionString))
+                {
+                    await connection.OpenAsync();
+
+                    var listenerTypes = string.Join(",", selectedListeners.Select(l => l.Type.ToString()));
+                    
+                    var command = new SqlCommand(
+                        @"UPDATE ReplicationConfig 
+                          SET ListenerType = @ListenerType 
+                          WHERE Id = (SELECT TOP 1 Id FROM ReplicationConfig ORDER BY Id DESC)", connection);
+                    
+                    command.Parameters.AddWithValue("@ListenerType", listenerTypes);
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to save listener configuration: {ex.Message}");
+            }
         }
 
     }
