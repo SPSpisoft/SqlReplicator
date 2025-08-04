@@ -4,7 +4,7 @@
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
                  Title="SQL Replicator - Database Connection Setup" 
-                 Height="600" Width="650"
+                 Height="600" Width="780"
                  WindowStartupLocation="CenterScreen"
                  ResizeMode="CanMinimize">
 
@@ -90,14 +90,13 @@
                     <iconPacks:PackIconMaterial x:Name="TargetStatusIcon"  Kind="ChevronRight" VerticalAlignment="Center" Foreground="#ddd" Margin="10,0"/>
                     <Button x:Name="Step4Button" Cursor="Hand" Content="Configuration" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
                     <iconPacks:PackIconMaterial x:Name="ConfigStatusIcon"  Kind="ChevronRight" VerticalAlignment="Center" Foreground="#ddd" Margin="10,0"/>
-                    <Button x:Name="Step5Button" Cursor="Hand" Content="Service Management" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
+                    <Button x:Name="Step5Button" Cursor="Hand" Content="Service Manager" Style="{StaticResource StepButtonStyle}" IsEnabled="False" Click="StepButton_Click"/>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- Main Content Area -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <Grid x:Name="MainContentGrid">
+        <Grid Grid.Row="1" x:Name="MainContentGrid">
                 <!-- Step 1: Base Database -->
                 <Border x:Name="Step1Panel" Style="{StaticResource DatabaseCardStyle}" Visibility="Visible">
                     <StackPanel>
@@ -293,7 +292,6 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
@@ -302,33 +300,47 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                                                 <!-- Refresh Status Button -->
-                         <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
-                             <Button x:Name="RefreshStatusButton" Content="Refresh Status" Click="RefreshStatus_Click" Padding="10,5" Background="#2196F3" Foreground="White"/>
-                         </StackPanel>
+
 
                         <!-- Detailed Report Section -->
-                        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#FFF" Margin="0,0,0,10">
+                        <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#FFF" Margin="0,0,0,10">
                             <StackPanel>
                                 <TextBlock Text="Detailed Configuration Report" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="180">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="130">
                                     <TextBlock x:Name="DetailedReportText" Text="Loading detailed report..." TextWrapping="Wrap" FontFamily="Consolas" FontSize="10"/>
                                 </ScrollViewer>
                             </StackPanel>
                         </Border>
 
+                        <!-- Configuration Management Section -->
+                        <!--<Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#FFF" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Configuration Management" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                                <TextBlock Text="Open the configuration form to manage field mappings and replication settings." 
+                                           Foreground="#666" Margin="0,0,0,10" TextWrapping="Wrap"/>
 
-
+                            </StackPanel>
+                        </Border>-->
 
                     </Grid>
-                    
+
                     <!-- Navigation Row -->
-                    <StackPanel Margin="0,10,0,0" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <Button Content="Previous" Margin="0,0,10,0" Click="PreviousStep_Click"/>
-                        <Button x:Name="ConfigNextButton" Content="Next Step" Background="#2196F3" Foreground="White" Padding="20,8" Click="NextStep_Click"/>
-                        <Button x:Name="DeleteConfigsButton" Content="Delete Configs" 
-                                Background="#F44336" Foreground="White" Padding="15,5" Margin="10,0,0,0"
-                                Click="DeleteConfigs_Click"/>
+                    <StackPanel Grid.Column="7" Margin="0,10,0,0" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+
+                        <StackPanel Grid.Row="3" Margin="0,0,260,0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                            <Button x:Name="OpenConfigFormButton" Content="Open Configuration Form" Click="GoToConfig_Click" 
+                                            Padding="15,8" Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
+                            <Button x:Name="DeleteConfigsButton" Content="Delete Configs" 
+                                    Background="#F44336" Foreground="White" Padding="15,5" Margin="10,0,10,0"
+                                    Click="DeleteConfigs_Click"/>
+
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="3" Margin="0,0,0,0" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button Content="Previous" Margin="0,0,10,0" Click="PreviousStep_Click"/>
+                            <Button x:Name="ConfigNextButton" Content="Next Step" Background="#2196F3" Foreground="White" Padding="20,8" Click="NextStep_Click"/>
+                        </StackPanel>
+                        
                     </StackPanel>
 
                     <!-- Configuration content will be added later -->
@@ -435,7 +447,6 @@
                 </StackPanel>
             </Border>
             </Grid>
-        </ScrollViewer>
 
         <!-- Footer -->
         <Border Grid.Row="2" Background="White" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">

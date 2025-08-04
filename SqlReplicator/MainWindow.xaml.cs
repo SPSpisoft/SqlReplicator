@@ -36,6 +36,7 @@ namespace SqlReplicator
         private string replicationType = "Full";
         private ConfigurationStatus? _currentConfigStatus;
         private List<ListenerConfiguration>? _availableListeners;
+        private bool _FieldMappingPass;
 
         public MainWindow()
         {
@@ -116,12 +117,12 @@ namespace SqlReplicator
             }
             finally
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.Invoke(async () =>
                 {
                     StopRefreshAnimation();
                     RefreshServersButton.IsEnabled = true;
                     AbleFormControls(true);
-                    UpdateStepButtons();
+                    await UpdateStepButtons();
                     if (_refreshCancellation != null && !_refreshCancellation.Token.IsCancellationRequested)
                     {
                         StatusLabel.Text = "SQL Server instances loaded successfully. Please configure your connection settings.";
@@ -162,6 +163,7 @@ namespace SqlReplicator
             Step2Button.IsEnabled = setAble;
             Step3Button.IsEnabled = setAble;
             Step4Button.IsEnabled = setAble;
+            Step5Button.IsEnabled = setAble;
 
             Step1Panel.IsEnabled = setAble;
             //BaseServerCombo.IsEnabled = setAble;
@@ -382,6 +384,8 @@ namespace SqlReplicator
         {
             try
             {
+                DeleteConfigsButton.Visibility = Visibility.Hidden;
+
                 SourceServerCombo.Text = "";
                 SourceUsernameBox.Text = "";
                 SourcePasswordBox.Password = "";
@@ -504,7 +508,40 @@ namespace SqlReplicator
                                                 break;
                                             }
                                         }
+
+
+
                                     }
+                                    else
+                                    {
+                                        MessageBox.Show("No existing configuration found.", "Error",
+                                            MessageBoxButton.OK, MessageBoxImage.Error);
+                                    }
+                                }
+                            }
+
+                            //-------------------- Field Mapping -----------------------
+                            await Task.Delay(1000);
+                            using (var command = new SqlCommand(
+                             @"SELECT Count(*) FROM FieldMappings", connection))
+                            {
+                                using (var reader = await command.ExecuteReaderAsync())
+                                {
+                                    if (await reader.ReadAsync())
+                                    {
+                                        var countRecords = reader.GetInt32(0);
+
+                                        if(countRecords > 0)
+                                        {
+                                            ConfigStatusIcon.Foreground = new SolidColorBrush(Colors.Red);
+                                            AnimateIcon(ConfigStatusIcon, Colors.Green);
+                                            CheckServiceStatusButton.IsEnabled = true;
+
+                                            _FieldMappingPass = true;
+                                            DeleteConfigsButton.Visibility = Visibility.Visible;
+                                        }
+                                    }
+
                                     else
                                     {
                                         MessageBox.Show("No existing configuration found.", "Error",
@@ -542,21 +579,21 @@ namespace SqlReplicator
         }
 
 
-        private void NextStep_Click(object sender, RoutedEventArgs e)
+        private async void NextStep_Click(object sender, RoutedEventArgs e)
         {
-            if (currentStep < 4)
+            if (currentStep < 5)
             {
-                ShowStep(currentStep + 1);
+                await ShowStep(currentStep + 1);
             }
         }
 
-        private void PreviousStep_Click(object sender, RoutedEventArgs e)
+        private async void PreviousStep_Click(object sender, RoutedEventArgs e)
         {
             if (currentStep > 1)
             {
                 currentStep--;
                 UpdateStepVisibility();
-                UpdateStepButtons();
+                await UpdateStepButtons();
             }
         }
 
@@ -566,15 +603,57 @@ namespace SqlReplicator
             Step2Panel.Visibility = currentStep == 2 ? Visibility.Visible : Visibility.Collapsed;
             Step3Panel.Visibility = currentStep == 3 ? Visibility.Visible : Visibility.Collapsed;
             Step4Panel.Visibility = currentStep == 4 ? Visibility.Visible : Visibility.Collapsed;
+            Step5Panel.Visibility = currentStep == 5 ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        private void UpdateStepButtons()
+        private async Task<bool> IsConfigurationComplete()
         {
-            //Step1Button.IsEnabled = currentStep != 1;
-            //Step2Button.IsEnabled = currentStep != 2;
-            //Step3Button.IsEnabled = currentStep != 3;
-            //Step4Button.IsEnabled = currentStep != 4;
-            //Step5Button.IsEnabled = currentStep != 5;
+            try
+            {
+                // Check if all database connections are configured
+                if (string.IsNullOrEmpty(BaseDatabaseCombo.Text) ||
+                    string.IsNullOrEmpty(SourceDatabaseCombo.Text) ||
+                    string.IsNullOrEmpty(TargetDatabaseCombo.Text))
+                {
+                    return false;
+                }
+
+                // Check if configuration exists in database
+                var baseConnectionString = connectionStrings["Base"];
+                if (string.IsNullOrEmpty(baseConnectionString))
+                {
+                    return false;
+                }
+
+                baseConnectionString += $"Database={BaseDatabaseCombo.Text};";
+
+                using (var connection = new SqlConnection(baseConnectionString))
+                {
+                    await connection.OpenAsync();
+                    using (var command = new SqlCommand("SELECT COUNT(*) FROM ReplicationConfig", connection))
+                    {
+                        var configCount = Convert.ToInt32(await command.ExecuteScalarAsync());
+                        return configCount > 0;
+                    }
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async Task UpdateStepButtons()
+        {
+            // Check if configuration is complete to enable Step 5
+            var configComplete = await IsConfigurationComplete();
+            
+            // Enable/disable step buttons based on completion status
+            Step1Button.IsEnabled = currentStep != 1;
+            Step2Button.IsEnabled = currentStep != 2;
+            Step3Button.IsEnabled = currentStep != 3;
+            Step4Button.IsEnabled = currentStep != 4;
+            Step5Button.IsEnabled = currentStep != 5 && configComplete;
 
             // Update button styles based on current step
             var buttons = new[] { Step1Button, Step2Button, Step3Button, Step4Button, Step5Button };
@@ -646,7 +725,7 @@ namespace SqlReplicator
 
                 if (currentStep < 5)
                 {
-                    ShowStep(currentStep + 1);
+                    await ShowStep(currentStep + 1);
                 }
             }
             catch (Exception ex)
@@ -692,6 +771,9 @@ namespace SqlReplicator
 
                                 // Refresh config status after window is closed
                                 await CheckExistingConfigs();
+                                
+                                // Update step buttons to enable Step 5 if configuration is complete
+                                await UpdateStepButtons();
 
                                 //var configWindow = new ConfigurationWindow(baseConnectionString, sourceConnectionString, targetConnectionString);
                                 //configWindow.Owner = this;
@@ -776,7 +858,7 @@ namespace SqlReplicator
             }
         }
 
-        private void StepButton_Click(object sender, RoutedEventArgs e)
+        private async void StepButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button button) return;
 
@@ -786,13 +868,14 @@ namespace SqlReplicator
                 "Step2Button" => 2,
                 "Step3Button" => 3,
                 "Step4Button" => 4,
+                "Step5Button" => 5,
                 _ => 1
             };
 
-            ShowStep(stepNumber);
+            await ShowStep(stepNumber);
         }
 
-        private void ShowStep(int stepNumber)
+        private async Task ShowStep(int stepNumber)
         {
             // Hide all panels
             Step1Panel.Visibility = Visibility.Collapsed;
@@ -826,7 +909,7 @@ namespace SqlReplicator
             }
 
             currentStep = stepNumber;
-            UpdateStepButtons();
+            await UpdateStepButtons();
         }
 
         //private void UpdateConfigButtonState()
@@ -997,10 +1080,6 @@ namespace SqlReplicator
         {
             var report = new List<string>
             {
-                "=== CONFIGURATION STATUS REPORT ===",
-                "",
-                "=== CURRENT UI CONFIGURATION ===",
-                ""
             };
 
             // Check current UI state for database connections
@@ -1043,8 +1122,15 @@ namespace SqlReplicator
             if (hasBaseConfig && hasSourceConfig && hasTargetConfig)
             {
                 report.Add("  🟢 All database connections are configured");
-                report.Add("  🟡 Field mappings need to be configured");
-                report.Add("  🟡 Listeners need to be selected");
+                if (_FieldMappingPass)
+                {
+                    report.Add("  🟢 Field mappings found");
+                }
+                else { 
+                    report.Add("  🟡 Field mappings need to be configured"); 
+                }
+
+                //report.Add("  🟡 Listeners need to be selected");
             }
             else
             {
@@ -1069,7 +1155,14 @@ namespace SqlReplicator
             else
             {
                 report.Add("  1. ✅ All database connections configured");
-                report.Add("  2. Configure field mappings and table selections");
+                if (_FieldMappingPass)
+                {
+                    report.Add("  2. ✅ Field mappings and table selection configured");
+                }
+                else
+                {
+                    report.Add("  2. Configure field mappings and table selections");
+                }
                 report.Add("  3. Select listeners for change detection");
                 report.Add("  4. Create and start the replication service");
             }
@@ -1279,10 +1372,7 @@ namespace SqlReplicator
             }
         }
 
-        private async void RefreshStatus_Click(object sender, RoutedEventArgs e)
-        {
-            await LoadConfigurationStatus();
-        }
+
 
         private async Task SaveListenerConfiguration(string baseConnectionString, List<ListenerConfiguration> selectedListeners)
         {
