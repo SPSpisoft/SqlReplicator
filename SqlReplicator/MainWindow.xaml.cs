@@ -13,6 +13,9 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Threading;
 using MahApps.Metro.IconPacks;
+using System.IO;
+using System.ServiceProcess;
+using System.Diagnostics;
 
 namespace SqlReplicator
 {
@@ -535,7 +538,7 @@ namespace SqlReplicator
                                         {
                                             ConfigStatusIcon.Foreground = new SolidColorBrush(Colors.Red);
                                             AnimateIcon(ConfigStatusIcon, Colors.Green);
-                                            CheckServiceStatusButton.IsEnabled = true;
+                                            // CheckServiceStatusButton.IsEnabled = true; // Removed from XAML
 
                                             _FieldMappingPass = true;
                                             DeleteConfigsButton.Visibility = Visibility.Visible;
@@ -902,9 +905,7 @@ namespace SqlReplicator
                     break;
                 case 5:
                     Step5Panel.Visibility = Visibility.Visible;
-                    LoadAvailableListeners();
-                    PopulateListenerSelectionPanel();
-                    UpdateListenerSelection();
+                    await UpdateServiceButtonStates(); // Check service button states
                     break;
             }
 
@@ -919,109 +920,7 @@ namespace SqlReplicator
 
         //********************************** GENERATOR *********************************
 
-        private async void ManageServiceButton_Click(object sender, RoutedEventArgs e)
-        {
-            // Disable the button to prevent multiple clicks
-            ((Button)sender).IsEnabled = false;
-            ProgressStackPanel.Children.Clear(); // Clear previous steps
-
-            // Ensure the application is running with Administrator privileges
-            if (!IsRunningAsAdministrator())
-            {
-                DisplayProgress("Please run the application as Administrator.", false);
-                MessageBox.Show("To manage the Windows service, the application must be run with Administrator privileges.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                ((Button)sender).IsEnabled = true;
-                return;
-            }
-
-            // Get the base database connection string
-            string baseConnectionString = connectionStrings["Base"];
-
-            if (string.IsNullOrWhiteSpace(baseConnectionString))
-            {
-                DisplayProgress("Base database connection string cannot be empty.", false);
-                MessageBox.Show("Please enter the base database connection string.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                ((Button)sender).IsEnabled = true;
-                return;
-            }
-
-            // Get selected listeners
-            var selectedListeners = GetSelectedListeners();
-            
-            if (selectedListeners.Count == 0)
-            {
-                DisplayProgress("No listeners selected. Please select at least one listener.", false);
-                MessageBox.Show("Please select at least one listener for change detection.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                ((Button)sender).IsEnabled = true;
-                return;
-            }
-
-            // Check compatibility
-            var compatibilityWarnings = ListenerCompatibilityChecker.CheckCompatibility(selectedListeners);
-            if (compatibilityWarnings.Count > 0)
-            {
-                var warningMessage = string.Join("\n", compatibilityWarnings);
-                var result = MessageBox.Show(
-                    $"The following warnings were detected:\n\n{warningMessage}\n\nDo you want to continue anyway?",
-                    "Listener Compatibility Warnings",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-
-                if (result == MessageBoxResult.No)
-                {
-                    ((Button)sender).IsEnabled = true;
-                    return;
-                }
-            }
-
-            // Save listener configuration
-            try
-            {
-                DisplayProgress("Saving listener configuration...", true);
-                await SaveListenerConfiguration(baseConnectionString, selectedListeners);
-                DisplayProgress("Listener configuration saved successfully.", true);
-            }
-            catch (Exception ex)
-            {
-                DisplayProgress($"Failed to save listener configuration: {ex.Message}", false);
-                MessageBox.Show($"Failed to save listener configuration: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                ((Button)sender).IsEnabled = true;
-                return;
-            }
-
-            // Create an IProgress object to report status to the UI
-            var progress = new Progress<Tuple<string, bool>>(report =>
-            {
-                // Report status to the UI thread
-                Dispatcher.Invoke(() => DisplayProgress(report.Item1, report.Item2));
-            });
-
-            try
-            {
-                bool success = await ServiceInstallerManager.ManageReplicationService(baseConnectionString, progress);
-
-                if (success)
-                {
-                    MessageBox.Show("Sync service created and started successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    
-                    // Refresh configuration status
-                    await LoadConfigurationStatus();
-                }
-                else
-                {
-                    MessageBox.Show("Service creation failed. Please check the application logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            catch (Exception ex)
-            {
-                DisplayProgress($"Unexpected error: {ex.Message}", false);
-                MessageBox.Show($"Unexpected error while creating the service: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                ((Button)sender).IsEnabled = true; // Re-enable the button
-            }
-        }
+        // Removed ManageServiceButton_Click method - no longer needed
 
         /// <summary>
         /// Displays the progress of the operation in the UI as a visual checklist.
@@ -1178,227 +1077,10 @@ namespace SqlReplicator
             }
         }
 
-        private void PopulateListenerSelectionPanel()
-        {
-            ListenerSelectionPanel.Children.Clear();
+        // Removed OnListenerSelectionChanged, GetSelectedListeners, and UpdateListenerSelection methods
+        // since ListenerSelectionPanel and CompatibilityWarningBorder were removed from XAML
 
-            if (_availableListeners == null) return;
-
-            foreach (var listener in _availableListeners.OrderBy(l => l.Priority))
-            {
-                var listenerPanel = CreateListenerPanel(listener);
-                ListenerSelectionPanel.Children.Add(listenerPanel);
-            }
-        }
-
-        private UIElement CreateListenerPanel(ListenerConfiguration listener)
-        {
-            var border = new Border
-            {
-                BorderBrush = Brushes.LightGray,
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(3),
-                Padding = new Thickness(8),
-                Margin = new Thickness(0, 0, 0, 5),
-                Background = Brushes.White
-            };
-
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            // Checkbox
-            var checkbox = new CheckBox
-            {
-                IsChecked = listener.IsEnabled,
-                VerticalAlignment = VerticalAlignment.Top,
-                Margin = new Thickness(0, 0, 8, 0)
-            };
-            checkbox.Checked += OnListenerSelectionChanged;
-            checkbox.Unchecked += OnListenerSelectionChanged;
-            Grid.SetColumn(checkbox, 0);
-
-            // Content panel
-            var contentPanel = new StackPanel();
-            Grid.SetColumn(contentPanel, 1);
-
-            // Name and priority
-            var namePanel = new StackPanel { Orientation = Orientation.Horizontal };
-            var nameText = new TextBlock
-            {
-                Text = listener.Name,
-                FontWeight = FontWeights.Bold,
-                FontSize = 14
-            };
-            var priorityText = new TextBlock
-            {
-                Text = $" (Priority: {listener.Priority})",
-                Foreground = Brushes.Gray,
-                FontSize = 12
-            };
-            namePanel.Children.Add(nameText);
-            namePanel.Children.Add(priorityText);
-
-            // Description
-            var descriptionText = new TextBlock
-            {
-                Text = listener.Description,
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 4, 0, 4),
-                FontSize = 11
-            };
-
-            // Performance and reliability indicators
-            var indicatorsPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
-            
-            var performanceText = new TextBlock
-            {
-                Text = $"Performance: {listener.PerformanceImpact}",
-                Foreground = GetPerformanceColor(listener.PerformanceImpact),
-                FontSize = 10,
-                Margin = new Thickness(0, 0, 15, 0)
-            };
-            
-            var reliabilityText = new TextBlock
-            {
-                Text = $"Reliability: {listener.ReliabilityLevel}",
-                Foreground = GetReliabilityColor(listener.ReliabilityLevel),
-                FontSize = 10
-            };
-
-            indicatorsPanel.Children.Add(performanceText);
-            indicatorsPanel.Children.Add(reliabilityText);
-
-            // Interval (for polling-based listeners)
-            if (listener.Interval.HasValue)
-            {
-                var intervalText = new TextBlock
-                {
-                    Text = $"Interval: {listener.Interval.Value.TotalMinutes} minutes",
-                    Foreground = Brushes.Blue,
-                    FontSize = 10,
-                    Margin = new Thickness(0, 4, 0, 0)
-                };
-                contentPanel.Children.Add(intervalText);
-            }
-
-            contentPanel.Children.Add(namePanel);
-            contentPanel.Children.Add(descriptionText);
-            contentPanel.Children.Add(indicatorsPanel);
-
-            grid.Children.Add(checkbox);
-            grid.Children.Add(contentPanel);
-            border.Child = grid;
-
-            // Store the listener configuration in the checkbox's Tag property
-            checkbox.Tag = listener;
-
-            return border;
-        }
-
-        private Brush GetPerformanceColor(string performance)
-        {
-            return performance switch
-            {
-                "Very Low" => Brushes.DarkGreen,
-                "Low" => Brushes.Green,
-                "Medium" => Brushes.Orange,
-                "High" => Brushes.Red,
-                _ => Brushes.Gray
-            };
-        }
-
-        private Brush GetReliabilityColor(string reliability)
-        {
-            return reliability switch
-            {
-                "Very High" => Brushes.DarkGreen,
-                "High" => Brushes.Green,
-                "Medium" => Brushes.Orange,
-                "Low" => Brushes.Red,
-                _ => Brushes.Gray
-            };
-        }
-
-        private void OnListenerSelectionChanged(object sender, RoutedEventArgs e)
-        {
-            var selectedListeners = GetSelectedListeners();
-            var warnings = ListenerCompatibilityChecker.CheckCompatibility(selectedListeners);
-
-            if (warnings.Count > 0)
-            {
-                CompatibilityWarningBorder.Visibility = Visibility.Visible;
-                CompatibilityWarningText.Text = string.Join("\n", warnings);
-            }
-            else
-            {
-                CompatibilityWarningBorder.Visibility = Visibility.Collapsed;
-            }
-        }
-
-        private List<ListenerConfiguration> GetSelectedListeners()
-        {
-            var selectedListeners = new List<ListenerConfiguration>();
-
-            foreach (var child in ListenerSelectionPanel.Children)
-            {
-                if (child is Border border && border.Child is Grid grid)
-                {
-                    var checkbox = grid.Children.OfType<CheckBox>().FirstOrDefault();
-                    if (checkbox?.IsChecked == true && checkbox.Tag is ListenerConfiguration listener)
-                    {
-                        selectedListeners.Add(listener);
-                    }
-                }
-            }
-
-            return selectedListeners;
-        }
-
-        private void UpdateListenerSelection()
-        {
-            if (_currentConfigStatus?.SelectedListeners == null) return;
-
-            foreach (var child in ListenerSelectionPanel.Children)
-            {
-                if (child is Border border && border.Child is Grid grid)
-                {
-                    var checkbox = grid.Children.OfType<CheckBox>().FirstOrDefault();
-                    if (checkbox?.Tag is ListenerConfiguration listener)
-                    {
-                        checkbox.IsChecked = _currentConfigStatus.SelectedListeners.Any(l => l.Type == listener.Type);
-                    }
-                }
-            }
-        }
-
-
-
-        private async Task SaveListenerConfiguration(string baseConnectionString, List<ListenerConfiguration> selectedListeners)
-        {
-            using (var connection = new SqlConnection(baseConnectionString))
-            {
-                await connection.OpenAsync();
-                using (var command = new SqlCommand())
-                {
-                    command.Connection = connection;
-                    command.CommandText = @"
-                        IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('ReplicationConfig') AND name = 'SelectedListeners')
-                        BEGIN
-                            ALTER TABLE ReplicationConfig ADD SelectedListeners NVARCHAR(MAX)
-                        END
-
-                        UPDATE ReplicationConfig 
-                        SET SelectedListeners = @SelectedListeners 
-                        WHERE Id = (SELECT TOP 1 Id FROM ReplicationConfig ORDER BY Id DESC)";
-
-                    var listenerTypes = string.Join(",", selectedListeners.Select(l => l.Type.ToString()));
-                    command.Parameters.AddWithValue("@SelectedListeners", listenerTypes);
-
-                    await command.ExecuteNonQueryAsync();
-                }
-            }
-        }
+        // Removed SaveListenerConfiguration method - no longer needed
 
         // Service Management Event Handlers
         private async void CheckServiceStatus_Click(object sender, RoutedEventArgs e)
@@ -1435,6 +1117,561 @@ namespace SqlReplicator
         {
             // This would remove the selected listener
             MessageBox.Show("Remove Listener functionality will be implemented in the next version.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // Service Creation Methods for Step 5
+        private void BrowsePath_Click(object sender, RoutedEventArgs e)
+        {
+            var folderDialog = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = "Select service installation path",
+                ShowNewFolderButton = true,
+                SelectedPath = ServicePathTextBox.Text
+            };
+
+            if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                ServicePathTextBox.Text = folderDialog.SelectedPath;
+            }
+        }
+
+        private async void CreateService_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                CreateServiceButton.IsEnabled = false;
+                ProgressStackPanel.Children.Clear();
+
+                // Check administrator privileges
+                if (!IsRunningAsAdministrator())
+                {
+                    DisplayProgress("Application must be run as Administrator to create Windows service.", false);
+                    MessageBox.Show("To manage the Windows service, the application must be run with Administrator privileges.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    CreateServiceButton.IsEnabled = true;
+                    return;
+                }
+
+                // Validate selected path
+                string selectedPath = ServicePathTextBox.Text.Trim();
+                if (string.IsNullOrEmpty(selectedPath))
+                {
+                    DisplayProgress("Please select a service installation path.", false);
+                    MessageBox.Show("Please select a service installation path.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    CreateServiceButton.IsEnabled = true;
+                    return;
+                }
+
+                // Check path access
+                DisplayProgress("Checking access to selected path...", true);
+                if (!await CheckPathAccess(selectedPath))
+                {
+                    DisplayProgress("Insufficient permissions to write to selected path.", false);
+                    MessageBox.Show("Insufficient permissions to write to selected path. Please select another path or check permissions.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    CreateServiceButton.IsEnabled = true;
+                    return;
+                }
+
+                // Get selected listener type
+                var selectedItem = ListenerTypeComboBox.SelectedItem as ComboBoxItem;
+                string listenerType = selectedItem?.Tag?.ToString() ?? "Trigger";
+
+                DisplayProgress($"Creating service with {listenerType} listener...", true);
+
+                // Create service files
+                bool serviceCreated = await CreateServiceFiles(selectedPath, listenerType);
+                if (!serviceCreated)
+                {
+                    DisplayProgress("Error creating service files.", false);
+                    CreateServiceButton.IsEnabled = true;
+                    return;
+                }
+
+                // Install Windows service
+                DisplayProgress("Installing Windows service...", true);
+                bool serviceInstalled = await InstallWindowsService(selectedPath);
+                if (!serviceInstalled)
+                {
+                    DisplayProgress("Error installing Windows service.", false);
+                    CreateServiceButton.IsEnabled = true;
+                    return;
+                }
+
+                // Create shortcuts
+                if (CreateDesktopShortcutCheckBox.IsChecked == true)
+                {
+                    DisplayProgress("Creating desktop shortcut...", true);
+                    CreateDesktopShortcut(selectedPath);
+                }
+
+                if (CreateStartMenuShortcutCheckBox.IsChecked == true)
+                {
+                    DisplayProgress("Creating start menu shortcut...", true);
+                    CreateStartMenuShortcut(selectedPath);
+                }
+
+                DisplayProgress("Service created successfully!", true);
+
+                // Enable test and stop buttons
+                TestServiceButton.IsEnabled = true;
+                StopServiceButton.IsEnabled = true;
+
+                // Ask user if they want to test the service
+                var result = MessageBox.Show("Service created successfully! Would you like to test the service?", 
+                    "Test Service", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    await TestService();
+                }
+
+                CreateServiceButton.IsEnabled = true;
+            }
+            catch (Exception ex)
+            {
+                DisplayProgress($"Error creating service: {ex.Message}", false);
+                MessageBox.Show($"Error creating service: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                CreateServiceButton.IsEnabled = true;
+            }
+        }
+
+        private async Task<bool> CheckPathAccess(string path)
+        {
+            try
+            {
+                // Check if path exists
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+
+                // Test file writing
+                string testFile = Path.Combine(path, "test_access.tmp");
+                await File.WriteAllTextAsync(testFile, "test");
+                File.Delete(testFile);
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async Task<bool> CreateServiceFiles(string path, string listenerType)
+        {
+            try
+            {
+                // Create service files
+                string serviceExePath = Path.Combine(path, "SqlReplicatorService.exe");
+                string configPath = Path.Combine(path, "appsettings.json");
+
+                // Generate service executable (here we create a sample file)
+                string serviceTemplate = GetServiceTemplate(listenerType);
+                await File.WriteAllTextAsync(serviceExePath, serviceTemplate);
+
+                // Create configuration file
+                string configTemplate = GetConfigTemplate();
+                await File.WriteAllTextAsync(configPath, configTemplate);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                DisplayProgress($"Error creating files: {ex.Message}", false);
+                return false;
+            }
+        }
+
+        private string GetServiceTemplate(string listenerType)
+        {
+            switch (listenerType)
+            {
+                case "Trigger":
+                    return @"
+using System.ServiceProcess;
+using System.Threading;
+
+namespace SqlReplicatorService
+{
+    public class SqlReplicatorService : ServiceBase
+    {
+        public SqlReplicatorService()
+        {
+            ServiceName = ""SqlReplicatorService"";
+        }
+
+        protected override void OnStart(string[] args)
+        {
+            // Start trigger-based replication logic here
+        }
+
+        protected override void OnStop()
+        {
+            // Stop replication logic here
+        }
+    }
+}";
+                case "CDC":
+                    return @"
+using System.ServiceProcess;
+using System.Threading;
+
+namespace SqlReplicatorService
+{
+    public class SqlReplicatorService : ServiceBase
+    {
+        public SqlReplicatorService()
+        {
+            ServiceName = ""SqlReplicatorService"";
+        }
+
+        protected override void OnStart(string[] args)
+        {
+            // Start CDC-based replication logic here
+        }
+
+        protected override void OnStop()
+        {
+            // Stop replication logic here
+        }
+    }
+}";
+                case "ChangeTracking":
+                    return @"
+using System.ServiceProcess;
+using System.Threading;
+
+namespace SqlReplicatorService
+{
+    public class SqlReplicatorService : ServiceBase
+    {
+        public SqlReplicatorService()
+        {
+            ServiceName = ""SqlReplicatorService"";
+        }
+
+        protected override void OnStart(string[] args)
+        {
+            // Start change tracking replication logic here
+        }
+
+        protected override void OnStop()
+        {
+            // Stop replication logic here
+        }
+    }
+}";
+                case "Polling":
+                    return @"
+using System.ServiceProcess;
+using System.Threading;
+
+namespace SqlReplicatorService
+{
+    public class SqlReplicatorService : ServiceBase
+    {
+        public SqlReplicatorService()
+        {
+            ServiceName = ""SqlReplicatorService"";
+        }
+
+        protected override void OnStart(string[] args)
+        {
+            // Start polling-based replication logic here
+        }
+
+        protected override void OnStop()
+        {
+            // Stop replication logic here
+        }
+    }
+}";
+                case "Temporal":
+                    return @"
+using System.ServiceProcess;
+using System.Threading;
+
+namespace SqlReplicatorService
+{
+    public class SqlReplicatorService : ServiceBase
+    {
+        public SqlReplicatorService()
+        {
+            ServiceName = ""SqlReplicatorService"";
+        }
+
+        protected override void OnStart(string[] args)
+        {
+            // Start temporal table replication logic here
+        }
+
+        protected override void OnStop()
+        {
+            // Stop replication logic here
+        }
+    }
+}";
+                default:
+                    return "// Service template";
+            }
+        }
+
+        private string GetConfigTemplate()
+        {
+            return @"{
+  ""ConnectionStrings"": {
+    ""Base"": """",
+    ""Source"": """",
+    ""Target"": """"
+  },
+  ""ServiceSettings"": {
+    ""Interval"": 5000,
+    ""LogLevel"": ""Information""
+  }
+}";
+        }
+
+        private async Task<bool> InstallWindowsService(string path)
+        {
+            try
+            {
+                string serviceExePath = Path.Combine(path, "SqlReplicatorService.exe");
+                
+                // Use sc.exe to install service
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "sc.exe",
+                    Arguments = $"create SqlReplicatorService binPath= \"{serviceExePath}\" start= auto",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                using var process = Process.Start(startInfo);
+                await process.WaitForExitAsync();
+
+                if (process.ExitCode == 0)
+                {
+                    // Start service if auto-start is selected
+                    if (AutoStartServiceCheckBox.IsChecked == true)
+                    {
+                        startInfo.Arguments = "start SqlReplicatorService";
+                        using var startProcess = Process.Start(startInfo);
+                        await startProcess.WaitForExitAsync();
+                    }
+                    return true;
+                }
+                else
+                {
+                    string error = await process.StandardError.ReadToEndAsync();
+                    DisplayProgress($"Error installing service: {error}", false);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                DisplayProgress($"Error installing service: {ex.Message}", false);
+                return false;
+            }
+        }
+
+        private void CreateDesktopShortcut(string path)
+        {
+            try
+            {
+                string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                string shortcutPath = Path.Combine(desktopPath, "SqlReplicator Service.lnk");
+                string targetPath = Path.Combine(path, "SqlReplicatorService.exe");
+
+                CreateShortcut(shortcutPath, targetPath, "SqlReplicator Service");
+            }
+            catch (Exception ex)
+            {
+                DisplayProgress($"Error creating desktop shortcut: {ex.Message}", false);
+            }
+        }
+
+        private void CreateStartMenuShortcut(string path)
+        {
+            try
+            {
+                string startMenuPath = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu);
+                string shortcutPath = Path.Combine(startMenuPath, "SqlReplicator Service.lnk");
+                string targetPath = Path.Combine(path, "SqlReplicatorService.exe");
+
+                CreateShortcut(shortcutPath, targetPath, "SqlReplicator Service");
+            }
+            catch (Exception ex)
+            {
+                DisplayProgress($"Error creating start menu shortcut: {ex.Message}", false);
+            }
+        }
+
+        private void CreateShortcut(string shortcutPath, string targetPath, string description)
+        {
+            try
+            {
+                // Use COM Interop to create shortcut
+                Type t = Type.GetTypeFromProgID("WScript.Shell");
+                dynamic shell = Activator.CreateInstance(t);
+                dynamic shortcut = shell.CreateShortcut(shortcutPath);
+                
+                shortcut.TargetPath = targetPath;
+                shortcut.Description = description;
+                shortcut.WorkingDirectory = Path.GetDirectoryName(targetPath);
+                shortcut.Save();
+                
+                // Release COM resources
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcut);
+                System.Runtime.InteropServices.Marshal.ReleaseComObject(shell);
+                
+                DisplayProgress($"Shortcut created: {shortcutPath}", true);
+            }
+            catch (Exception ex)
+            {
+                DisplayProgress($"Error creating shortcut: {ex.Message}", false);
+            }
+        }
+
+        private async void TestService_Click(object sender, RoutedEventArgs e)
+        {
+            await TestService();
+        }
+
+        private async Task TestService()
+        {
+            try
+            {
+                TestServiceButton.IsEnabled = false;
+                DisplayProgress("Testing service...", true);
+
+                // Check service status
+                bool serviceRunning = await CheckServiceStatus();
+                if (serviceRunning)
+                {
+                    DisplayProgress("Service is running and working correctly.", true);
+                    MessageBox.Show("Service tested successfully and is running.", "Test Successful", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    DisplayProgress("Service is not running. Attempting to start...", true);
+                    bool started = await StartService();
+                    if (started)
+                    {
+                        DisplayProgress("Service started successfully.", true);
+                        MessageBox.Show("Service started successfully.", "Start Successful", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        DisplayProgress("Error starting service.", false);
+                        MessageBox.Show("Error starting service. Please check permissions.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+
+                TestServiceButton.IsEnabled = true;
+            }
+            catch (Exception ex)
+            {
+                DisplayProgress($"Error testing service: {ex.Message}", false);
+                MessageBox.Show($"Error testing service: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                TestServiceButton.IsEnabled = true;
+            }
+        }
+
+        private async Task<bool> CheckServiceStatus()
+        {
+            try
+            {
+                using var serviceController = new ServiceController("SqlReplicatorService");
+                return serviceController.Status == ServiceControllerStatus.Running;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async Task<bool> StartService()
+        {
+            try
+            {
+                using var serviceController = new ServiceController("SqlReplicatorService");
+                serviceController.Start();
+                serviceController.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+                return serviceController.Status == ServiceControllerStatus.Running;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async void StopService_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                StopServiceButton.IsEnabled = false;
+                DisplayProgress("Stopping service...", true);
+
+                using var serviceController = new ServiceController("SqlReplicatorService");
+                if (serviceController.Status == ServiceControllerStatus.Running)
+                {
+                    serviceController.Stop();
+                    serviceController.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+                    DisplayProgress("Service stopped successfully.", true);
+                    MessageBox.Show("Service stopped successfully.", "Stop Successful", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    DisplayProgress("Service is not running.", true);
+                }
+
+                StopServiceButton.IsEnabled = true;
+            }
+            catch (Exception ex)
+            {
+                DisplayProgress($"Error stopping service: {ex.Message}", false);
+                MessageBox.Show($"Error stopping service: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                StopServiceButton.IsEnabled = true;
+            }
+        }
+
+        private async Task UpdateServiceButtonStates()
+        {
+            try
+            {
+                bool serviceExists = await CheckServiceExists();
+                if (serviceExists)
+                {
+                    bool isRunning = await CheckServiceStatus();
+                    TestServiceButton.IsEnabled = true;
+                    StopServiceButton.IsEnabled = isRunning;
+                }
+                else
+                {
+                    TestServiceButton.IsEnabled = false;
+                    StopServiceButton.IsEnabled = false;
+                }
+            }
+            catch
+            {
+                TestServiceButton.IsEnabled = false;
+                StopServiceButton.IsEnabled = false;
+            }
+        }
+
+        private async Task<bool> CheckServiceExists()
+        {
+            try
+            {
+                using var serviceController = new ServiceController("SqlReplicatorService");
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

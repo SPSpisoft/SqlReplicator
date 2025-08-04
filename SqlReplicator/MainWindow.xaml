@@ -350,101 +350,114 @@
 
             <!-- Step 5: Service Management -->
             <Border x:Name="Step5Panel" Style="{StaticResource DatabaseCardStyle}" Visibility="Collapsed">
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-                        <iconPacks:PackIconMaterial Kind="Server" Width="32" Height="32" Foreground="#4CAF50" VerticalAlignment="Center"/>
-                        <TextBlock Text="Service Management" FontSize="24" FontWeight="Bold" Foreground="#333" Margin="15,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
-
-                    <TextBlock Text="Manage the replication service and its listeners." 
-                               Foreground="#666" Margin="0,0,0,20" TextWrapping="Wrap"/>
-
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- Service Status -->
-                        <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#FFF" Margin="0,0,0,10">
-                            <StackPanel>
-                                <TextBlock Text="Service Status" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
-                                <TextBlock Text="Check the status of the replication service and its listeners." 
-                                           Foreground="#666" Margin="0,0,0,10" TextWrapping="Wrap"/>
-                                <Button x:Name="CheckServiceStatusButton" Content="Check Service Status" Click="CheckServiceStatus_Click" Margin="0,10,0,0" Padding="15,8" Background="#2196F3" Foreground="White" FontWeight="Bold"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Listener Management -->
-                        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#FFF" Margin="0,0,0,10">
-                            <StackPanel>
-                                <TextBlock Text="Listener Management" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
-                                <TextBlock Text="Add, remove, or modify listeners for the replication service." 
-                                           Foreground="#666" Margin="0,0,0,10" TextWrapping="Wrap"/>
-                                <Button x:Name="AddListenerButton" Content="Add New Listener" Click="AddListener_Click" Margin="0,10,0,0" Padding="15,8" Background="#FF9800" Foreground="White" FontWeight="Bold"/>
-                                <Button x:Name="RemoveListenerButton" Content="Remove Selected Listener" Click="RemoveListener_Click" Margin="0,10,0,0" Padding="15,8" Background="#F44336" Foreground="White" FontWeight="Bold"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Listener Configuration Section -->
-                        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#FFF" Margin="0,0,0,10">
-                            <StackPanel>
-                                <TextBlock Text="Listener Configuration" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
-                                <TextBlock Text="Select the change detection methods you want to use. Multiple listeners can work together for redundancy." 
-                                           Foreground="#666" Margin="0,0,0,10" TextWrapping="Wrap"/>
-                                
-                                <!-- Compatibility Warning -->
-                                <Border x:Name="CompatibilityWarningBorder" BorderBrush="#FF9800" BorderThickness="1" CornerRadius="3" Padding="8" Background="#FFF3E0" Margin="0,0,0,10" Visibility="Collapsed">
-                                    <TextBlock x:Name="CompatibilityWarningText" Foreground="#E65100" TextWrapping="Wrap" FontSize="12"/>
-                                </Border>
-                                
-                                <!-- Listener Selection Panel -->
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="220">
-                                    <StackPanel x:Name="ListenerSelectionPanel">
-                                        <!-- Dynamic listener checkboxes will be added here -->
-                                    </StackPanel>
-                                </ScrollViewer>
-                            </StackPanel>
-                        </Border>
-
-                                                 <!-- Service Creation -->
-                         <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#FFF" Margin="0,0,0,10">
-                             <StackPanel>
-                                 <TextBlock Text="Service Creation" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
-                                 <TextBlock Text="Create and manage the replication service with your selected listeners." 
-                                            Foreground="#666" Margin="0,0,0,10" TextWrapping="Wrap"/>
-                                 
-                                 <!-- Progress Display -->
-                                 <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="5" Background="#FFF" Margin="0,0,0,10">
-                                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="150">
-                                         <StackPanel x:Name="ProgressStackPanel">
-                                             <!-- Progress steps will be added here -->
-                                         </StackPanel>
-                                     </ScrollViewer>
-                                 </Border>
-
-                                 <Button x:Name="ManageServiceButton" Content="Create and Start Sync Service" 
-                                         Click="ManageServiceButton_Click" Margin="0,10,0,0" Padding="15,8" 
-                                         Background="#4CAF50" Foreground="White" FontWeight="Bold"/>
-                             </StackPanel>
-                         </Border>
-
-                        <!-- Back/Next/Complete Row -->
-                        <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Button Content="Previous" Margin="0,0,10,0" Click="PreviousStep_Click"/>
-                            <Button x:Name="ServiceManagementCompleteButton" Content="Complete Setup" Background="#4CAF50" Foreground="White" Padding="20,8" IsEnabled="False" Click="CompleteSetup_Click"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <StackPanel MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}}" Margin="10">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                            <iconPacks:PackIconMaterial Kind="Server" Width="32" Height="32" Foreground="#4CAF50" VerticalAlignment="Center"/>
+                            <TextBlock Text="Service Management" FontSize="24" FontWeight="Bold" Foreground="#333" Margin="15,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
-                    </Grid>
-                </StackPanel>
+
+                        <TextBlock Text="Create and manage the replication service with your selected listeners." 
+                                   Foreground="#666" Margin="0,0,0,20" TextWrapping="Wrap"/>
+
+                        <Grid MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Listener Type Selection -->
+                            <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#F8F9FA" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="Listener Type Selection" FontWeight="Bold" FontSize="16" Margin="0,0,0,8"/>
+                                    <ComboBox x:Name="ListenerTypeComboBox" Margin="0,0,0,8" Padding="8,5">
+                                        <ComboBoxItem Content="Trigger-based Change Detection" Tag="Trigger" IsSelected="True"/>
+                                        <ComboBoxItem Content="Change Data Capture (CDC)" Tag="CDC"/>
+                                        <ComboBoxItem Content="SQL Server Change Tracking" Tag="ChangeTracking"/>
+                                        <ComboBoxItem Content="Polling-based Monitoring" Tag="Polling"/>
+                                        <ComboBoxItem Content="Temporal Table Tracking" Tag="Temporal"/>
+                                    </ComboBox>
+                                    <TextBlock Text="Select the change detection method for your replication service" Foreground="#666" FontSize="11" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Service Path Selection -->
+                            <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#F8F9FA" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="Service Installation Path" FontWeight="Bold" FontSize="16" Margin="0,0,0,8"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="ServicePathTextBox" Grid.Column="0" Margin="0,0,8,0" Padding="8,5" 
+                                                 Text="C:\SqlReplicator\Service" IsReadOnly="True"/>
+                                        <Button x:Name="BrowsePathButton" Grid.Column="1" Content="Browse" 
+                                                Click="BrowsePath_Click" Padding="10,5" Background="#2196F3" Foreground="White"/>
+                                    </Grid>
+                                    <TextBlock Text="Select the installation path for the service files" Foreground="#666" FontSize="11" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Service Options -->
+                            <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#F8F9FA" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="Service Options" FontWeight="Bold" FontSize="16" Margin="0,0,0,8"/>
+                                    <CheckBox x:Name="AutoStartServiceCheckBox" Content="Auto-start service after installation" 
+                                              IsChecked="True" Margin="0,0,0,5"/>
+                                    <CheckBox x:Name="CreateDesktopShortcutCheckBox" Content="Create desktop shortcut" 
+                                              IsChecked="True" Margin="0,0,0,5"/>
+                                    <CheckBox x:Name="CreateStartMenuShortcutCheckBox" Content="Create start menu shortcut" 
+                                              IsChecked="True" Margin="0,0,0,5"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Service Creation and Management -->
+                            <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10" Background="#FFF" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="Service Creation &amp; Management" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+                                    <TextBlock Text="Create and manage the replication service with your selected configuration." 
+                                               Foreground="#666" Margin="0,0,0,10" TextWrapping="Wrap"/>
+                                    
+                                    <!-- Progress Display -->
+                                    <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="5" Background="#FFF" Margin="0,0,0,10" MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=StackPanel}}">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="150" MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Border}}">
+                                            <StackPanel x:Name="ProgressStackPanel">
+                                                <!-- Progress steps will be added here -->
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                    </Border>
+
+                                    <!-- Service Management Buttons -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                        <Button x:Name="CreateServiceButton" Content="Create Service" 
+                                                Click="CreateService_Click" Margin="0,0,10,0" Padding="15,8" 
+                                                Background="#4CAF50" Foreground="White" FontWeight="Bold" MaxWidth="150" HorizontalAlignment="Left"/>
+                                        <Button x:Name="TestServiceButton" Content="Test Service" 
+                                                Click="TestService_Click" Margin="0,0,10,0" Padding="15,8" 
+                                                Background="#FF9800" Foreground="White" FontWeight="Bold" MaxWidth="120" HorizontalAlignment="Left" IsEnabled="False"/>
+                                        <Button x:Name="StopServiceButton" Content="Stop Service" 
+                                                Click="StopService_Click" Padding="15,8" 
+                                                Background="#F44336" Foreground="White" FontWeight="Bold" MaxWidth="120" HorizontalAlignment="Left" IsEnabled="False"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Navigation Buttons -->
+                            <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,10,0,0">
+                                <Button Content="Previous" Margin="0,0,10,0" Click="PreviousStep_Click"/>
+                                <Button x:Name="ServiceManagementCompleteButton" Content="Complete Setup" Background="#4CAF50" Foreground="White" Padding="20,8" IsEnabled="False" Click="CompleteSetup_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
             </Border>
             </Grid>
 
